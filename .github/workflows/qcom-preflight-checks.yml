@@ -19,10 +19,6 @@ on:
         description: "Run PR Check Emails"
         type: boolean
         default: true
-      commit-message-check:
-        description: "Run Commit Message Length Check"
-        type: boolean
-        default: true
       dependency-review:
         description: "Run Dependency Review"
         type: boolean
@@ -44,14 +40,11 @@ jobs:
       dependency-review: ${{ inputs.dependency-review }}
     secrets:
       SEMGREP_APP_TOKEN: ${{ secrets.SEMGREP_APP_TOKEN }}
+  
 
-  check-commit-message:
-    if: ${{ inputs.commit-message-check }}
+  echo:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v2
+      - name: Echo presence
+        run: echo "✅ I am here"
 
-      - name: Check commit message length
-        run: |
-          echo "✅ Commit message length is sufficient."
