@@ -19,12 +19,12 @@ on:
         description: "Run PR Check Emails"
         type: boolean
         default: true
-      dependency-review:
-        description: "Run Dependency Review"
-        type: boolean
-        default: true
       commit-message-check:
         description: "Run Commit Message Length Check"
+        type: boolean
+        default: true
+      dependency-review:
+        description: "Run Dependency Review"
         type: boolean
         default: true
 
