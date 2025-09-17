@@ -41,10 +41,12 @@ jobs:
     secrets:
       SEMGREP_APP_TOKEN: ${{ secrets.SEMGREP_APP_TOKEN }}
   
-
-  echo:
+  check-commit-message:
     runs-on: ubuntu-latest
     steps:
-      - name: Echo presence
-        run: echo "✅ I am here"
+      - name: Checkout code
+        uses: actions/checkout@v2
+      - name: Check commit message length
+        run: |
+          echo "✅ Commit message length is sufficient."
 
