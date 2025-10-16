@@ -42,8 +42,8 @@ env:
 jobs:
   process_image:
     runs-on:
-      group: GHA-Audioreach-Stg-SelfHosted-RG
-      labels: [ self-hosted, self-hosted, audior-stg-u2204-x64-large-od-ephem ]
+      group: GHA-Audioreach-SelfHosted-RG
+      labels: [ self-hosted, self-hosted, audior-prd-u2204-x64-large-od-ephem ]
     steps:
       - name: Build docker Image
         id: get-docker-image
@@ -81,7 +81,7 @@ jobs:
         id: pull_meta_ar
         uses: Audioreach/audioreach-workflows/.github/actions/aws-s3-exchanger@stg
         with:
-          s3_bucket: qli-stg-audior-gh-artifacts
+          s3_bucket: qli-prd-audior-gh-artifacts
           mode: download
           download_filename: ${{ env.IMAGE_NAME }}.tar.gz
           location: Audioreach/meta-ar/post_merge_build
@@ -148,6 +148,6 @@ jobs:
         id: upload_tar_image
         uses: Audioreach/audioreach-workflows/.github/actions/aws-s3-exchanger@stg
         with:
-          s3_bucket: qli-stg-audior-gh-artifacts
+          s3_bucket: qli-prd-audior-gh-artifacts
           local_file: ${{ github.workspace }}/${{ env.IMAGE_NAME }}.tar.gz
           mode: upload
