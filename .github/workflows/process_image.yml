@@ -95,23 +95,28 @@ jobs:
 
           echo "Extracting the image"
           tar -xvf ${{ env.IMAGE_NAME }}.tar.gz
+          ROOTFS_IMG=$(tar -tf ${{ env.IMAGE_NAME }}.tar.gz | grep 'rootfs.img$')
+          ROOTFS_DIR=$(dirname "$ROOTFS_IMG")
+          # Export as GitHub Actions environment variables
+          echo "ROOTFS_IMG=$ROOTFS_IMG" >> $GITHUB_ENV
+          echo "ROOTFS_DIR=$ROOTFS_DIR" >> $GITHUB_ENV
           rm -rf ${{ env.IMAGE_NAME }}.tar.gz
           echo "Image extracted successfully"
 
-          ls -l ${{ env.IMAGE_NAME }}/rootfs.img
+          ls -l "$ROOTFS_DIR/rootfs.img"
 
           # Run inside the docker container
           docker run \
             --rm \
             -v $PWD:/workspace \
             -w /workspace \
-            -e "IMAGE_NAME=${{ env.IMAGE_NAME }}" \
+            -e "ROOTFS_DIR=$ROOTFS_DIR" \
             -e "FILES_TO_COPY=${{ inputs.files_to_copy }}" \
             --privileged \
             ${{ steps.get-docker-image.outputs.image_name }} \
             bash -c "
               set -xe
-              cd ${IMAGE_NAME}
+              cd ${ROOTFS_DIR}
               mkdir -p /tmp/rootfs
               sudo mount rootfs.img /tmp/rootfs
               echo "Image mounted successfully"
@@ -124,7 +129,7 @@ jobs:
               sudo umount /tmp/rootfs
               echo "Image unmounted successfully"
             "
-            ls -l ${{ env.IMAGE_NAME }}/rootfs.img
+          ls -l "$ROOTFS_DIR/rootfs.img"
 
       - name: Create tar image for qcomflash directory
         id: create_tar_image
@@ -134,7 +139,7 @@ jobs:
           set -e
           echo $PWD
           echo "Creating tar image for qcomflash directory"
-          tar -cvf ${{ env.IMAGE_NAME }}.tar.gz ${{ env.IMAGE_NAME }}/
+          tar -cvf ${{ env.IMAGE_NAME }}.tar.gz ${{ env.ROOTFS_DIR }}/
           echo "Tar image created successfully"
 
       - name: Upload tar image
