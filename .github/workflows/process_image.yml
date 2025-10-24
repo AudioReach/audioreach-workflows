@@ -139,7 +139,8 @@ jobs:
           set -e
           echo $PWD
           echo "Creating tar image for qcomflash directory"
-          tar -cvf ${{ env.IMAGE_NAME }}.tar.gz ${{ env.ROOTFS_DIR }}/
+          #tar -cvf ${{ env.IMAGE_NAME }}.tar.gz ${{ env.ROOTFS_DIR }}/
+          tar -czvf ${{ env.IMAGE_NAME }}.tar.gz ${{ env.ROOTFS_DIR }}/
           echo "Tar image created successfully"
 
       - name: Upload tar image
