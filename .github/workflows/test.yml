@@ -7,14 +7,14 @@ on:
 jobs:
   submit_lava:
     runs-on:
-      group: GHA-Audioreach-SelfHosted-RG
+      group: GHA-AudioReach-SelfHosted-RG
       labels: [ self-hosted, self-hosted, audior-prd-u2204-x64-large-od-ephem ]
     steps:
       - name: Clone repository
         uses: actions/checkout@v5
         with:
           fetch-depth: 0
-          repository: Audioreach/meta-ar
+          repository: AudioReach/meta-ar
 
       - name: Download presigned URL
         id: download_url
