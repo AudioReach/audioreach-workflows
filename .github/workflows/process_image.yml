@@ -104,7 +104,11 @@ jobs:
           echo "Image extracted successfully"
 
           ls -l "$ROOTFS_DIR/rootfs.img"
-
+          
+          # Create sample file in workspace (outside container)
+          touch SAMPLE_AUDIO_CLIP.txt
+          echo "it consists of sample audio clip" > SAMPLE_AUDIO_CLIP.txt
+          
           # Run inside the docker container
           docker run \
             --rm \
@@ -120,6 +124,10 @@ jobs:
               mkdir -p /tmp/rootfs
               sudo mount rootfs.img /tmp/rootfs
               echo "Image mounted successfully"
+
+              # Now copy the file to the mounted rootfs
+              sudo cp /workspace/SAMPLE_AUDIO_CLIP.txt /tmp/rootfs/
+              sudo chmod 644 /tmp/rootfs/SAMPLE_AUDIO_CLIP.txt
 
               # Copy the arg build files to the mounted image
               source ./${FILES_TO_COPY}
