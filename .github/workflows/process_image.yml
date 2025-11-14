@@ -126,7 +126,7 @@ jobs:
             mkdir -p /tmp/rootfs
 
           # Mount the rootfs image
-            mount rootfs.img /tmp/rootfs
+            sudo mount rootfs.img /tmp/rootfs
             echo "Image mounted successfully"
 
            # Create sample file inside container
@@ -141,7 +141,7 @@ jobs:
 
           # Sync changes and unmount
           sync
-          umount /tmp/rootfs
+          sudo umount /tmp/rootfs
           echo "Image unmounted successfully"
           '
           ls -l "$ROOTFS_DIR/rootfs.img"
