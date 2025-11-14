@@ -105,9 +105,7 @@ jobs:
 
           ls -l "$ROOTFS_DIR/rootfs.img"
 
-          # Create sample file in workspace (outside container)
-          touch SAMPLE_AUDIO_CLIP.txt
-          echo "it consists of sample audio clip" > SAMPLE_AUDIO_CLIP.txt
+
 
           # Run inside the docker container
           docker run \
@@ -115,7 +113,7 @@ jobs:
             -v $PWD:/workspace \
             -w /workspace \
             -e "ROOTFS_DIR=$ROOTFS_DIR" \
-            -e "FILES_TO_COPY=${{ inputs.files_to_copy }}" \
+            -e "FILES_TO_COPY=${{ github.workspace }}/${{ inputs.files_to_copy }}" \
             --privileged \
             ${{ steps.get-docker-image.outputs.image_name }} \
             bash -c "
@@ -124,9 +122,11 @@ jobs:
               mkdir -p /tmp/rootfs
               sudo mount rootfs.img /tmp/rootfs
               echo "Image mounted successfully"
-
+          # Create sample file in workspace (outside container)
+          touch SAMPLE_AUDIO_CLIP.txt
+          echo "it consists of sample audio clip" > SAMPLE_AUDIO_CLIP.txt
               # Now copy the file to the mounted rootfs
-              sudo cp /workspace/SAMPLE_AUDIO_CLIP.txt /tmp/rootfs/
+              sudo cp /workspace/SAMPLE_AUDIO_CLIP.txt /tmp/rootfs/etc
 
               # Copy the arg build files to the mounted image
               source ./${FILES_TO_COPY}
