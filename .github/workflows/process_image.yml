@@ -126,7 +126,7 @@ jobs:
             mkdir -p /tmp/rootfs
 
           # Mount the rootfs image
-            mount -o loop rootfs.img /tmp/rootfs
+            mount rootfs.img /tmp/rootfs
             echo "Image mounted successfully"
 
            # Create sample file inside container
@@ -136,7 +136,7 @@ jobs:
            cp SAMPLE_AUDIO_CLIP.txt /tmp/rootfs/etc
 
            # Copy build files to the mounted rootfs
-          cp "$FILES_TO_COPY" /tmp/rootfs/etc/
+          source ./${FILES_TO_COPY} /tmp/rootfs/etc/
           echo "Build files copied successfully"
 
           # Sync changes and unmount
