@@ -128,12 +128,12 @@ jobs:
           # Mount the rootfs image
             sudo mount rootfs.img /tmp/rootfs
             echo "Image mounted successfully"
-
+            touch SAMPLE_AUDIO_CLIP.txt
            # Create sample file inside container
             echo "it consists of sample audio clip" > SAMPLE_AUDIO_CLIP.txt
 
            # Copy the sample file to the mounted rootfs
-           cp SAMPLE_AUDIO_CLIP.txt /tmp/rootfs/etc
+           sudo cp -R SAMPLE_AUDIO_CLIP.txt /tmp/rootfs/etc
 
            # Copy build files to the mounted rootfs
           source ./${FILES_TO_COPY} /tmp/rootfs/etc/
