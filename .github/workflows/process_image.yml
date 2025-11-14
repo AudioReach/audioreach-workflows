@@ -60,7 +60,7 @@ jobs:
 
       - name: Download build artifact
         id: download_build_artifact
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@v6
         with:
           name: build.tar
           path: ${{ github.workspace }}
@@ -70,7 +70,7 @@ jobs:
         shell: bash
         run: |
           #!/bin/bash
-          set -xe
+          set -ex
 
           mkdir -p ${{ github.workspace }}/build
           echo "Extracting the build artifact"
@@ -91,7 +91,7 @@ jobs:
         shell: bash
         run: |
           #!/bin/bash
-          set -xe
+          set -ex
 
           echo "Extracting the image"
           tar -xvf ${{ env.IMAGE_NAME }}.tar.gz
@@ -104,47 +104,46 @@ jobs:
           echo "Image extracted successfully"
 
           ls -l "$ROOTFS_DIR/rootfs.img"
-          
+
           # Run inside the docker container
           docker run \
-              --rm \
+            --rm \
             -v $PWD:/workspace \
             -w /workspace \
             -e "ROOTFS_DIR=$ROOTFS_DIR" \
             -e "FILES_TO_COPY=${{ inputs.files_to_copy }}" \
             --privileged \
             ${{ steps.get-docker-image.outputs.image_name }} \
-            bash -c '
+            bash -c "
               set -xe
               cd ${ROOTFS_DIR}
               mkdir -p /tmp/rootfs
-              touch SAMPLE_AUDIO_CLIP.txt
-              echo "it consists of sample audio clip" > SAMPLE_AUDIO_CLIP.txt
+
               sudo mount rootfs.img /tmp/rootfs
               echo "Image mounted successfully"
-              sudo cp -R SAMPLE_AUDIO_CLIP.txt /tmp/rootfs/etc
-              # Copy the arg build files to the mounted image
+              touch SAMPLE_AUDIO_CLIP.txt
+              echo "it consists of sample audio clip" > SAMPLE_AUDIO_CLIP.txt
+              cp -R SAMPLE_AUDIO_CLIP.txt /tmp/rootfs/etc
               
+              # Copy the arg build files to the mounted image
               source ./${FILES_TO_COPY}
               echo "Build files copied successfully"
               sync
               # Unmount the image
               sudo umount /tmp/rootfs
               echo "Image unmounted successfully"
-            '
+            "
           ls -l "$ROOTFS_DIR/rootfs.img"
+          echo " Best called here"
 
       - name: Create tar image for qcomflash directory
         id: create_tar_image
         shell: bash
         run: |
           #!/bin/bash
-          set -xe
+          set -ex
           echo $PWD
           echo "Creating tar image for qcomflash directory"
-          echo "$ROOTFS_DIR"
-          echo "${{ env.ROOTFS_DIR }}"
-          #tar -cvf ${{ env.IMAGE_NAME }}.tar.gz ${{ env.ROOTFS_DIR }}/
           tar -czvf ${{ env.IMAGE_NAME }}.tar.gz ${{ env.ROOTFS_DIR }}/
           echo "Tar image created successfully"
 
