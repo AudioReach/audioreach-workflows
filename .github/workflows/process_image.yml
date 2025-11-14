@@ -126,7 +126,8 @@ jobs:
           touch SAMPLE_AUDIO_CLIP.txt
           echo "it consists of sample audio clip" > SAMPLE_AUDIO_CLIP.txt
               # Now copy the file to the mounted rootfs
-              sudo cp /workspace/SAMPLE_AUDIO_CLIP.txt /tmp/rootfs/etc
+              cat SAMPLE_AUDIO_CLIP.txt
+              sudo cp SAMPLE_AUDIO_CLIP.txt /tmp/rootfs/etc
 
               # Copy the arg build files to the mounted image
               source ./${FILES_TO_COPY}
