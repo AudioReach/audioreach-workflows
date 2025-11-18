@@ -55,7 +55,7 @@ No required or optional inputs defined for `workflow_call`.
 Processes image for build URL.
 
 **Optional Inputs:**
-- `files_to_copy` (string, default: `ci/files_to_copy.sh`): Optional argument for specifying files to copy to the extracted precompiled meta-ar flat_build image.
+- `files_to_copy` (string, default: `ci/files_to_copy.sh`): Optional argument for specifying files to copy to the extracted precompiled meta-audioreach flat_build image.
 - `event_name` (string, default: `${{ github.event_name }}`): Optional event name.
 - `pr_ref` (string, default: `${{ github.event.pull_request.head.ref }}`): Optional pull request reference.
 - `pr_repo` (string, default: `${{ github.event.pull_request.head.repo.full_name }}`): Optional pull request repository.
