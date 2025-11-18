@@ -95,7 +95,7 @@ jobs:
           s3_bucket: qli-prd-audior-gh-artifacts
           download_filename: ${{ env.SDK_NAME }}
           mode: download
-          location: AudioReach/meta-ar/post_merge_build
+          location: AudioReach/meta-audioreach/post_merge_build
 
       - name: Setup Directory Structure
         run: mkdir -p install/tmp

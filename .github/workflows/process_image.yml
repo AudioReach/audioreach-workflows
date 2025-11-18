@@ -77,14 +77,14 @@ jobs:
           tar -xvf ${{ github.workspace }}/build.tar -C ${{ github.workspace }}/build
           echo "Build artifact extracted successfully"
 
-      - name: Pull meta-ar pre compiled image
-        id: pull_meta_ar
+      - name: Pull meta-audioreach pre compiled image
+        id: pull_meta_audioreach
         uses: AudioReach/audioreach-workflows/.github/actions/aws-s3-exchanger@master
         with:
           s3_bucket: qli-prd-audior-gh-artifacts
           mode: download
           download_filename: ${{ env.IMAGE_NAME }}.tar.gz
-          location: AudioReach/meta-ar/post_merge_build
+          location: AudioReach/meta-audioreach/post_merge_build
 
       - name: Extract image and mount
         id: extract_image
