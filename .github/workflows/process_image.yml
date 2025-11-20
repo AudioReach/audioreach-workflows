@@ -114,21 +114,22 @@ jobs:
             -e "FILES_TO_COPY=${{ inputs.files_to_copy }}" \
             --privileged \
             ${{ steps.get-docker-image.outputs.image_name }} \
-            bash -c "
+            bash -c '
               set -xe
               cd ${ROOTFS_DIR}
-              mkdir -p /tmp/rootfs
+              sudo mkdir -p /tmp/rootfs
               sudo mount rootfs.img /tmp/rootfs
               echo "Image mounted successfully"
+              
 
               # Copy the arg build files to the mounted image
-              source ./${FILES_TO_COPY}
+              source "/workspace/${FILES_TO_COPY}"
               echo "Build files copied successfully"
               sync
               # Unmount the image
               sudo umount /tmp/rootfs
               echo "Image unmounted successfully"
-            "
+            '
           ls -l "$ROOTFS_DIR/rootfs.img"
 
       - name: Create tar image for qcomflash directory
