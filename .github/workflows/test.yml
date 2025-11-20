@@ -65,6 +65,15 @@ jobs:
           cat "${target_file}"
           echo "target=${target_file}" >> "$GITHUB_OUTPUT"
 
+
+      - name: Clone QTI TestKit and Run Audio Tests
+        run: |
+            set -euxo pipefail
+            sudo git clone https://github.com/qualcomm-linux/qcom-linux-testkit qcom-linux-testkit
+            cd qcom-linux-testkit/Runner
+            sudo ./run-test.sh AudioPlayback
+            sudo ./run-test.sh AudioRecord
+            
       - name: Test with LAVA
         if: ${{ steps.listjobs.outputs.target != '' }}
         id: submit_job
