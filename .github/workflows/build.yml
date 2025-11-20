@@ -77,11 +77,11 @@ jobs:
     steps:
       - name: Build docker Image
         id: get-docker-image
-        uses: AudioReach/audioreach-workflows/.github/actions/build_docker_image@master
+        uses: AudioReach/audioreach-workflows/.github/actions/build_docker_image@stg
 
       - name: Sync Codebase
         id: sync
-        uses: AudioReach/audioreach-workflows/.github/actions/sync@master
+        uses: AudioReach/audioreach-workflows/.github/actions/sync@stg
         with:
           event_name: ${{ inputs.event_name }}
           pr_ref: ${{ inputs.pr_ref }}
@@ -90,7 +90,7 @@ jobs:
 
       - name: Pull SDK sh file
         id: pull_sdk
-        uses: AudioReach/audioreach-workflows/.github/actions/aws-s3-exchanger@master
+        uses: AudioReach/audioreach-workflows/.github/actions/aws-s3-exchanger@stg
         with:
           s3_bucket: qli-prd-audior-gh-artifacts
           download_filename: ${{ env.SDK_NAME }}
@@ -108,7 +108,7 @@ jobs:
           echo "./install" | ./${{ env.SDK_NAME }}
           echo "SDK Script ran successfully"
           echo "download pkg.m4 for aclocal"
-          wget https://raw.githubusercontent.com/pkgconf/pkgconf/master/pkg.m4 -O ./install/sysroots/x86_64-pokysdk-linux/usr/share/aclocal/pkg.m4
+          wget https://raw.githubusercontent.com/pkgconf/pkgconf/stg/pkg.m4 -O ./install/sysroots/x86_64-pokysdk-linux/usr/share/aclocal/pkg.m4
 
       - name: Extract Kernel Version
         id: extract_kernel_version
@@ -121,7 +121,7 @@ jobs:
 
       - name: Build
         id: build
-        uses: AudioReach/audioreach-workflows/.github/actions/build@master
+        uses: AudioReach/audioreach-workflows/.github/actions/build@stg
         with:
           docker_image: ${{ steps.get-docker-image.outputs.image_name }}
         env:
