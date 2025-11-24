@@ -127,7 +127,9 @@ jobs:
               ls -al /tmp/rootfs/etc | grep SAMPLE_docker.txt
               
               # Copy the arg build files to the mounted image
-              sudo source "/workspace/${FILES_TO_COPY}"
+              # sudo source "/workspace/${FILES_TO_COPY}"
+              sudo bash -c "source /workspace/${FILES_TO_COPY}"
+              
               echo "Build files copied successfully"
               sync
               # Unmount the image
