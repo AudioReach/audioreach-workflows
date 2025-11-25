@@ -98,3 +98,4 @@ jobs:
             echo ":heavy_check_mark: Test job completed successfully." >> $GITHUB_STEP_SUMMARY
           else
             echo ":x: Test job failed." >> $GITHUB_STEP_SUMMARY
+          fi
