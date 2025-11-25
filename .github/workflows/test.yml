@@ -1,3 +1,4 @@
+
 name: _test
 description: Trigger LAVA tests on the build
 
@@ -8,20 +9,21 @@ jobs:
   submit_lava:
     runs-on:
       group: GHA-AudioReach-SelfHosted-RG
-      labels: [ self-hosted, self-hosted, audior-prd-u2204-x64-large-od-ephem ]
+      labels: [ self-hosted, audior-prd-u2204-x64-large-od-ephem ]
     steps:
-      
-      # Clone LAVA plan repo (from first snippet)
+      # ✅ Clone LAVA plan repo
       - name: Clone LAVA plan repo
         run: |
           git clone https://github.com/qualcomm-linux/qcom-linux-testkit.git
 
+      # ✅ Clone AudioReach repo
       - name: Clone repository
         uses: actions/checkout@v5
         with:
           fetch-depth: 0
           repository: AudioReach/meta-audioreach
 
+      # ✅ Download presigned URL
       - name: Download presigned URL
         id: download_url
         uses: actions/download-artifact@v6
@@ -29,6 +31,7 @@ jobs:
           name: presigned_url.txt
           path: ${{ github.workspace }}
 
+      # ✅ Extract build URL
       - name: Get build URL
         id: get_build_url
         uses: actions/github-script@v8
@@ -39,13 +42,14 @@ jobs:
             const url = fs.readFileSync(filePath, 'utf8').toString().trim()
             console.log(url)
             core.setOutput('build_url', url)
-          
+
       - name: Print trigger
         run: |
           echo "Triggered by ${{ github.event_name }}"
           echo "Build URL: --->"
           echo "${{ steps.get_build_url.outputs.build_url }}"
 
+      # ✅ Prepare dynamic LAVA job if available
       - name: "List jobs"
         id: listjobs
         run: |
@@ -53,7 +57,7 @@ jobs:
           if [ ! -f "$target_file" ]; then
             echo "Target file $target_file does not exist."
             echo "target_file=" >> "$GITHUB_OUTPUT"
-            exit 1
+            exit 0
           fi
 
           TARGET=${target_file}
@@ -71,50 +75,26 @@ jobs:
           cat "${target_file}"
           echo "target=${target_file}" >> "$GITHUB_OUTPUT"
 
-
-      #- name: Clone QTI TestKit and Run Audio Tests
-       # run: |
-       #     set -euxo pipefail
-        #    sudo git clone https://github.com/qualcomm-linux/qcom-linux-testkit qcom-linux-testkit
-        #    cd qcom-linux-testkit/Runner
-        #    sudo ./run-test.sh AudioPlayback
-        #    sudo ./run-test.sh AudioRecord
-
-
-        
-
+      # ✅ Submit LAVA job (dynamic OR fallback)
       - name: Submit LAVA job
-        uses: foundriesio/lava-action@v6
-        with:
-           lava_token: ${{ secrets.LAVATOKEN }}
-           lava_url: 'lava.infra.foundries.io'
-           job_definition: ${{ steps.listjobs.outputs.target != '' && steps.listjobs.outputs.target || './qcom-linux-testkit/Runner/plans/meta-ar-ci-premerge.yaml' }}
-           wait_for_job: true
-           fail_action_on_failure: true
-
-
-            
-      - name: Test with LAVA
-        if: ${{ steps.listjobs.outputs.target != '' }}
         id: submit_job
-        timeout-minutes: 20
+        timeout-minutes: 30
         uses: foundriesio/lava-action@v9
         with:
           lava_token: ${{ secrets.LAVATOKEN }}
           lava_url: 'lava.infra.foundries.io'
-          job_definition: ${{ steps.listjobs.outputs.target }}
+          job_definition: ${{ steps.listjobs.outputs.target != '' && steps.listjobs.outputs.target || './qcom-linux-testkit/Runner/plans/meta-ar-ci-premerge.yaml' }}
           wait_for_job: true
-          fail_action_on_failure: false
+          fail_action_on_failure: true
           save_result_as_artifact: true
           save_job_details: true
 
+      # ✅ Update Summary
       - name: Update Summary
         if: success() || failure()
         run: |
+          echo "## Test Job Summary" >> $GITHUB_STEP_SUMMARY
           if [ "${{ steps.submit_job.outcome }}" == "success" ]; then
-            echo "## Test Job Summary" >> $GITHUB_STEP_SUMMARY
             echo ":heavy_check_mark: Test job completed successfully." >> $GITHUB_STEP_SUMMARY
           else
-            echo "## Test Job Summary" >> $GITHUB_STEP_SUMMARY
             echo ":x: Test job failed." >> $GITHUB_STEP_SUMMARY
-          fi
