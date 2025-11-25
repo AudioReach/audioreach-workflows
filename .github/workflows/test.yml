@@ -10,6 +10,12 @@ jobs:
       group: GHA-AudioReach-SelfHosted-RG
       labels: [ self-hosted, self-hosted, audior-prd-u2204-x64-large-od-ephem ]
     steps:
+      
+      # Clone LAVA plan repo (from first snippet)
+      - name: Clone LAVA plan repo
+        run: |
+          git clone https://github.com/qualcomm-linux/qcom-linux-testkit.git
+
       - name: Clone repository
         uses: actions/checkout@v5
         with:
@@ -66,13 +72,26 @@ jobs:
           echo "target=${target_file}" >> "$GITHUB_OUTPUT"
 
 
-      - name: Clone QTI TestKit and Run Audio Tests
-        run: |
-            set -euxo pipefail
-            sudo git clone https://github.com/qualcomm-linux/qcom-linux-testkit qcom-linux-testkit
-            cd qcom-linux-testkit/Runner
-            sudo ./run-test.sh AudioPlayback
-            sudo ./run-test.sh AudioRecord
+      #- name: Clone QTI TestKit and Run Audio Tests
+       # run: |
+       #     set -euxo pipefail
+        #    sudo git clone https://github.com/qualcomm-linux/qcom-linux-testkit qcom-linux-testkit
+        #    cd qcom-linux-testkit/Runner
+        #    sudo ./run-test.sh AudioPlayback
+        #    sudo ./run-test.sh AudioRecord
+
+
+        
+      # ✅ Submit meta-ar-ci-premerge plan to LAVA (from first snippet)
+      - name: Submit meta-ar-ci-premerge plan to LAVA
+        uses: foundriesio/lava-action@v6
+        with:
+          lava_token: ${{ secrets.LAVATOKEN }}
+          lava_url: 'lava.infra.foundries.io'
+          job_definition: qcom-linux-testkit/Runner/plans/meta-ar-ci-premerge.yaml
+          wait_for_job: true
+          fail_action_on_failure: true
+
             
       - name: Test with LAVA
         if: ${{ steps.listjobs.outputs.target != '' }}
