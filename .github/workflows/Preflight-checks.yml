@@ -17,7 +17,7 @@ permissions:
 
 jobs:
   preflight-checks:
-    uses: ./.github/workflows/qcom-preflight-checks-reusable-workflow.yml
+    uses: ./.github/workflows/qcom-preflight-checks.yml
     with:
       repolinter: true
       semgrep: true
