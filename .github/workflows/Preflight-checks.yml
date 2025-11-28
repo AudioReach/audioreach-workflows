@@ -7,7 +7,7 @@ on:
     branches:
       - AudioReach  # Or use '*' for all target branches
 
-push:
+  push:
     branches:
       - AudioReach
 
