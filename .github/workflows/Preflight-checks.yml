@@ -24,5 +24,3 @@ jobs:
       copyright-license-detector: true
       pr-check-emails: true
       dependency-review: true
-    secrets:
-      SEMGREP_APP_TOKEN: ${{ secrets.SEMGREP_APP_TOKEN }}
