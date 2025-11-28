@@ -1,0 +1,28 @@
+name: Preflight checks
+
+on:
+  workflow_dispatch:
+  pull_request_target: # Requires access to base repo secrets
+    types: [opened, synchronize, reopened]
+    branches:
+      - AudioReach  # Or use '*' for all target branches
+
+push:
+    branches:
+      - AudioReach
+
+permissions:
+  contents: read
+  security-events: write
+
+jobs:
+  preflight-checks:
+    uses: ./.github/workflows/qcom-preflight-checks-reusable-workflow.yml
+    with:
+      repolinter: true
+      semgrep: true
+      copyright-license-detector: true
+      pr-check-emails: true
+      dependency-review: true
+    secrets:
+      SEMGREP_APP_TOKEN: ${{ secrets.SEMGREP_APP_TOKEN }}
