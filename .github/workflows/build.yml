@@ -140,3 +140,4 @@ jobs:
           rm -rf install/ ${{ env.SDK_NAME }}
           rm -rf build/ ${{ github.workspace }}/build.tar
           echo "Workspace cleaned up successfully"
+          echo "test run"
