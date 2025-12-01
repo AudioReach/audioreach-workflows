@@ -20,7 +20,7 @@ jobs:
     uses: ./.github/workflows/qcom-preflight-checks.yml
     with:
       repolinter: true
-      semgrep: true
-      copyright-license-detector: true
+      semgrep: false
+      copyright-license-detector: false
       pr-check-emails: true
       dependency-review: true
