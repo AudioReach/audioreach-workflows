@@ -43,7 +43,7 @@ jobs:
       - name: "List jobs"
         id: listjobs
         run: |
-          target_file="ci/lava/qcs6490-rb3gen2-core-kit/boot.yaml"
+          target_file="ci/lava/rb3gen2-core-kit/boot.yaml"
           if [ ! -f "$target_file" ]; then
             echo "Target file $target_file does not exist."
             echo "target_file=" >> "$GITHUB_OUTPUT"
