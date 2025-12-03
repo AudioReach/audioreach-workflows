@@ -35,7 +35,7 @@ on:
         description: Optional base reference to use for building
         default: ${{ github.ref_name }}
 
-# Using qcs6490 flat_build
+# Using rb3gen2 flat_build
 env:
   IMAGE_NAME: qcom-multimedia-image-rb3gen2-core-kit.rootfs.qcomflash
 
