@@ -43,7 +43,7 @@ jobs:
       - name: "List jobs"
         id: listjobs
         run: |
-          target_file="ci/lava/qcs6490-rb3gen2-core-kit/boot.yaml"
+          target_file="ci/lava/rb3gen2-core-kit/boot.yaml"
           if [ ! -f "$target_file" ]; then
             echo "Target file $target_file does not exist."
             echo "target_file=" >> "$GITHUB_OUTPUT"
@@ -54,7 +54,7 @@ jobs:
           FIND_PATH="${TARGET#*/}"
           DEVICE_TYPE_PATH="${FIND_PATH%/*}"
           DEVICE_TYPE="${DEVICE_TYPE_PATH#*/}"
-          BUILD_FILE_NAME="core-image-base-qcs6490-rb3gen2-core-kit.rootfs.qcomflash.tar.gz"
+          BUILD_FILE_NAME="core-image-base-rb3gen2-core-kit.rootfs.qcomflash.tar.gz"
           BUILD_DOWNLOAD_URL="${{ steps.get_build_url.outputs.build_url }}"
           sed -i "s|{{DEVICE_TYPE}}|${DEVICE_TYPE}|g" "${target_file}"
           sed -i "s|{{GITHUB_SHA}}|${GITHUB_SHA}|g" "${target_file}"
