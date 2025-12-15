@@ -37,7 +37,7 @@ on:
 
 # Using qcs6490 flat_build
 env:
-  IMAGE_NAME: core-image-base-qcs6490-rb3gen2-core-kit.rootfs.qcomflash
+  IMAGE_NAME: core-image-base-rb3gen2-core-kit.rootfs.qcomflash
 
 jobs:
   process_image:
