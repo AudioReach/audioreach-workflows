@@ -64,7 +64,7 @@ on:
 
 # Use qcs6490 sdk for compiling, as sdk is similar for all the targets
 env:
-  SDK_NAME: qcom-multimedia-image-rb3gen2-core-kit.rootfs.qcomflash
+  SDK_NAME: sdk-rb3gen2.sh
 
 
 jobs:
