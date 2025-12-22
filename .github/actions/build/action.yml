@@ -29,7 +29,6 @@ runs:
           -w $PWD \
           -e GITHUB_WORKSPACE="${{ github.workspace }}" \
           -e BUILD_ARGS="${{ env.BUILD_ARGS }}" \
-          -e KERNEL_VERSION="${{ env.KERNEL_VERSION }}" \
           -e BUILD_SCRIPT="${{ env.BUILD_SCRIPT }}" \
           --privileged \
           ${{ inputs.docker_image }} \
