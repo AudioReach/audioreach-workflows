@@ -107,9 +107,7 @@ jobs:
           echo "Running SDK Script"
           echo "./install" | ./${{ env.SDK_NAME }}
           echo "SDK Script ran successfully"
-          echo "download pkg.m4 for aclocal"
-          wget https://raw.githubusercontent.com/pkgconf/pkgconf/master/pkg.m4 -O ./install/sysroots/x86_64-pokysdk-linux/usr/share/aclocal/pkg.m4
-
+          
       - name: Extract Kernel Version
         id: extract_kernel_version
         shell: bash
