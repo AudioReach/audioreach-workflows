@@ -54,7 +54,7 @@ jobs:
           FIND_PATH="${TARGET#*/}"
           DEVICE_TYPE_PATH="${FIND_PATH%/*}"
           DEVICE_TYPE="${DEVICE_TYPE_PATH#*/}"
-          BUILD_FILE_NAME="core-image-base-rb3gen2-core-kit.rootfs.qcomflash.tar.gz"
+          BUILD_FILE_NAME="qcom-multimedia-image-rb3gen2-core-kit.rootfs.qcomflash.tar.gz"
           BUILD_DOWNLOAD_URL="${{ steps.get_build_url.outputs.build_url }}"
           sed -i "s|{{DEVICE_TYPE}}|${DEVICE_TYPE}|g" "${target_file}"
           sed -i "s|{{GITHUB_SHA}}|${GITHUB_SHA}|g" "${target_file}"
@@ -62,6 +62,39 @@ jobs:
           sed -i "s|{{BUILD_DOWNLOAD_URL}}|${ESCAPED_URL}|g" "${target_file}"
           sed -i "s|{{BUILD_FILE_NAME}}|${BUILD_FILE_NAME}|g" "${target_file}"
           sed -i "s|{{GITHUB_RUN_ID}}|${GITHUB_RUN_ID}|g" "${target_file}"
+
+          # ===== PASSWORD-ONLY CHANGE START =====
+          NEW_PW="oelinux123"
+
+          # Replace existing 'password:' inside the auto_login block
+          awk -v pw="$NEW_PW" '
+            BEGIN { in_auto = 0 }
+            /^ *auto_login:/ { in_auto = 1 }
+            in_auto == 1 && /^ *password:/ {
+              sub(/password:.*/, "password: " pw)
+              in_auto = 0
+            }
+            { print }
+          ' "$target_file" > "$target_file.tmp" && mv "$target_file.tmp" "$target_file"
+
+          # If no 'password:' line exists, insert it after 'username: root'
+          if ! grep -qE '^[[:space:]]*password:' "$target_file"; then
+            awk -v pw="$NEW_PW" '
+              BEGIN { in_auto = 0 }
+              {
+                print $0
+                if ($0 ~ /^ *auto_login:/) in_auto = 1
+                else if (in_auto == 1 && $0 ~ /^ *username:[[:space:]]*root/) {
+                  indent = gensub(/^([[:space:]]*).*/, "\\1", 1, $0)
+                  print indent "password_prompt: '\''Password:'\''"
+                  print indent "password: " pw
+                  in_auto = 0
+                }
+              }
+            ' "$target_file" > "$target_file.tmp" && mv "$target_file.tmp" "$target_file"
+          fi
+          # ===== PASSWORD-ONLY CHANGE END =====
+
           cat "${target_file}"
           echo "target=${target_file}" >> "$GITHUB_OUTPUT"
 
