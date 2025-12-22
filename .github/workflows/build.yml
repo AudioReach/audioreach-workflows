@@ -62,9 +62,9 @@ on:
         description: Optional base reference to use for building
         default: ${{ github.ref_name }}
 
-# Use qcs6490 sdk for compiling, as sdk is similar for all the targets
+# Use rb3gen2 sdk for compiling, as sdk is similar for all the targets
 env:
-  SDK_NAME: sdk-qcs6490.sh
+  SDK_NAME: sdk-rb3gen2.sh
 
 
 jobs:
