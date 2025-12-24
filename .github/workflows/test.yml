@@ -97,18 +97,6 @@ jobs:
 
           cat "${target_file}"
           echo "target=${target_file}" >> "$GITHUB_OUTPUT"
-     
-      
-      - name: Run QCOM Linux Testkit - AudioPlayback & AudioRecord
-        run: |
-          set -euo pipefail
-          echo "Cloning qcom-linux-testkit..."
-          sudo git clone https://github.com/qualcomm-linux/qcom-linux-testkit qcom-linux-testkit
-          cd qcom-linux-testkit/Runner
-          echo "Running AudioPlayback..."
-          sudo ./run-test.sh AudioPlayback
-          echo "Running AudioRecord..."
-          sudo ./run-test.sh AudioRecord
 
       - name: Test with LAVA
         if: ${{ steps.listjobs.outputs.target != '' }}
@@ -123,6 +111,18 @@ jobs:
           fail_action_on_failure: false
           save_result_as_artifact: true
           save_job_details: true
+
+      - name: Run QCOM Linux Testkit - AudioPlayback & AudioRecord
+        if: ${{ steps.submit_job.outcome == 'success' }}
+        run: |
+          set -euo pipefail
+          echo "Cloning qcom-linux-testkit..."
+          sudo git clone https://github.com/qualcomm-linux/qcom-linux-testkit qcom-linux-testkit
+          cd qcom-linux-testkit/Runner
+          echo "Running AudioPlayback..."
+          sudo ./run-test.sh AudioPlayback
+          echo "Running AudioRecord..."
+          sudo ./run-test.sh AudioRecord
 
       - name: Update Summary
         if: success() || failure()
