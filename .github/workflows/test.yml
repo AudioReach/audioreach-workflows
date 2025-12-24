@@ -15,6 +15,7 @@ jobs:
         with:
           fetch-depth: 0
           repository: AudioReach/meta-audioreach
+          ref: ci_test
 
       - name: Download presigned URL
         id: download_url
