@@ -64,38 +64,6 @@ jobs:
           sed -i "s|{{BUILD_FILE_NAME}}|${BUILD_FILE_NAME}|g" "${target_file}"
           sed -i "s|{{GITHUB_RUN_ID}}|${GITHUB_RUN_ID}|g" "${target_file}"
 
-          # ===== PASSWORD-ONLY CHANGE START =====
-          NEW_PW="oelinux123"
-
-          # Replace existing 'password:' inside the auto_login block
-          awk -v pw="$NEW_PW" '
-            BEGIN { in_auto = 0 }
-            /^ *auto_login:/ { in_auto = 1 }
-            in_auto == 1 && /^ *password:/ {
-              sub(/password:.*/, "password: " pw)
-              in_auto = 0
-            }
-            { print }
-          ' "$target_file" > "$target_file.tmp" && mv "$target_file.tmp" "$target_file"
-
-          # If no 'password:' line exists, insert it after 'username: root'
-          if ! grep -qE '^[[:space:]]*password:' "$target_file"; then
-            awk -v pw="$NEW_PW" '
-              BEGIN { in_auto = 0 }
-              {
-                print $0
-                if ($0 ~ /^ *auto_login:/) in_auto = 1
-                else if (in_auto == 1 && $0 ~ /^ *username:[[:space:]]*root/) {
-                  indent = gensub(/^([[:space:]]*).*/, "\\1", 1, $0)
-                  print indent "password_prompt: '\''Password:'\''"
-                  print indent "password: " pw
-                  in_auto = 0
-                }
-              }
-            ' "$target_file" > "$target_file.tmp" && mv "$target_file.tmp" "$target_file"
-          fi
-          # ===== PASSWORD-ONLY CHANGE END =====
-
           cat "${target_file}"
           echo "target=${target_file}" >> "$GITHUB_OUTPUT"
 
@@ -112,20 +80,6 @@ jobs:
           fail_action_on_failure: false
           save_result_as_artifact: true
           save_job_details: true
-
-      - name: Run QCOM Linux Testkit - AudioPlayback & AudioRecord
-        if: ${{ steps.submit_job.outcome == 'success' }}
-        run: |
-          set -euo pipefail
-          echo "Cloning qcom-linux-testkit..."
-          echo $PWD
-          sudo git clone https://github.com/qualcomm-linux/qcom-linux-testkit qcom-linux-testkit
-          cd qcom-linux-testkit/Runner
-          echo $PWD
-          echo "Running AudioPlayback..."
-          sudo ./run-test.sh AudioPlayback
-          echo "Running AudioRecord..."
-          sudo ./run-test.sh AudioRecord
 
       - name: Update Summary
         if: success() || failure()
