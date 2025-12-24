@@ -107,17 +107,6 @@ jobs:
           echo "Running SDK Script"
           echo "./install" | ./${{ env.SDK_NAME }}
           echo "SDK Script ran successfully"
-          echo "download pkg.m4 for aclocal"
-          wget https://raw.githubusercontent.com/pkgconf/pkgconf/master/pkg.m4 -O ./install/sysroots/x86_64-pokysdk-linux/usr/share/aclocal/pkg.m4
-
-      - name: Extract Kernel Version
-        id: extract_kernel_version
-        shell: bash
-        run: |
-          echo "Extracting Kernel Version"
-          kernel_version=$(ls ${{ github.workspace }}/install/sysroots/armv8-2a-poky-linux/usr/lib/modules/ | sort -V | tail -n 1)
-          echo "Kernel Version: $kernel_version"
-          echo "KERNEL_VERSION=${kernel_version}" >> "$GITHUB_OUTPUT"
 
       - name: Build
         id: build
@@ -130,7 +119,6 @@ jobs:
           SYNC_SCRIPT: ${{ inputs.sync_script }}
           APPLY_PATCH_SCRIPT: ${{ inputs.apply_patch_script }}
           CONFIG_SCRIPT: ${{ inputs.config_script }}
-          KERNEL_VERSION: ${{ steps.extract_kernel_version.outputs.KERNEL_VERSION }}
 
       - name: Clean Up Workspace
         if: always() 
