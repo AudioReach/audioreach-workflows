@@ -141,6 +141,7 @@ jobs:
               fi
 
               echo "AudioClips.tar.gz downloaded to ${TARGET_FILE}"
+              ls -al
               sync
               # Unmount the image
               sudo umount /tmp/rootfs
