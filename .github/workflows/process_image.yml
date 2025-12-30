@@ -125,6 +125,22 @@ jobs:
               # Copy the arg build files to the mounted image
               sudo bash -c "source /workspace/${FILES_TO_COPY}"
               echo "Build files copied successfully"
+              
+              # Download AudioClips.tar.gz directly into the root of the mounted rootfs (no extraction, no path creation)
+              FILE_URL="https://github.com/qualcomm-linux/qcom-linux-testkit/releases/download/Pulse-Audio-Files-v1.0/AudioClips.tar.gz"
+              TARGET_FILE="/tmp/rootfs/AudioClips.tar.gz"
+
+              if command -v wget >/dev/null 2>&1; then
+                sudo wget -O "${TARGET_FILE}" "${FILE_URL}"
+              elif command -v curl >/dev/null 2>&1; then
+                sudo curl -L -o "${TARGET_FILE}" "${FILE_URL}"
+              else
+                echo "Installing wget..."
+                sudo apt-get update && sudo apt-get install -y wget
+                sudo wget -O "${TARGET_FILE}" "${FILE_URL}"
+              fi
+
+              echo "AudioClips.tar.gz downloaded to ${TARGET_FILE}"
               sync
               # Unmount the image
               sudo umount /tmp/rootfs
