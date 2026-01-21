@@ -23,7 +23,7 @@ on:
         default: true
       enable-commit-msg-check:
         type: boolean
-        default: false
+        default: true
       commit-msg-check-extra-options:
         type: string
         default: ''
