@@ -34,11 +34,10 @@ permissions:
 
 jobs:
   qcom-preflight-checks:
-    uses: qualcomm/qcom-reusable-workflows/.github/workflows/reusable-qcom-preflight-checks-orchestrator.yml@main
+    uses: qualcomm/qcom-reusable-workflows/.github/workflows/reusable-qcom-preflight-checks-orchestrator.yml@v2.0.0
     with:
       # ✅ Preflight Checkers
       enable-semgrep-scan: ${{ inputs.enable-semgrep-scan }}
-      semgrep-cli-options: ${{ inputs.semgrep-cli-options }}
       enable-repolinter-check: ${{ inputs.enable-repolinter-check }}
       enable-copyright-license-check: ${{ inputs.enable-copyright-license-check }}
       enable-commit-email-check: ${{ inputs.enable-commit-email-check }}
