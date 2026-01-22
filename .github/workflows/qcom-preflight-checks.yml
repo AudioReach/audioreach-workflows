@@ -23,7 +23,7 @@ on:
         default: true
       enable-commit-msg-check:
         type: boolean
-        default: false
+        default: true
       commit-msg-check-extra-options:
         type: string
         default: ''
@@ -38,8 +38,10 @@ jobs:
     with:
       # ✅ Preflight Checkers
       enable-semgrep-scan: ${{ inputs.enable-semgrep-scan }}
+      semgrep-cli-options: ${{ inputs.semgrep-cli-options }}
       enable-repolinter-check: ${{ inputs.enable-repolinter-check }}
       enable-copyright-license-check: ${{ inputs.enable-copyright-license-check }}
       enable-commit-email-check: ${{ inputs.enable-commit-email-check }}
       enable-dependency-review: ${{ inputs.enable-dependency-review }}
       enable-commit-msg-check: ${{ inputs.enable-commit-msg-check }}
+      commit-msg-check-extra-options: ${{ inputs.commit-msg-check-extra-options }}
