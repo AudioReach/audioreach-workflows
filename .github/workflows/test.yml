@@ -2,7 +2,10 @@ name: _test
 description: Trigger LAVA tests on the build
 
 on:
-  workflow_call:
+  workflow_call:  
+    secrets:
+      LAVATOKEN:
+        required: true
 
 jobs:
   submit_lava:
