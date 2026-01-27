@@ -26,7 +26,7 @@ on:
         default: true
       commit-msg-check-extra-options:
         type: string
-        default: ''
+        default: '{"body-char-limit": 72, "sub-char-limit": 72}'
         description: 'Extra options as YAML/JSON object string, e.g., {"body-char-limit": 60, "sub-char-limit": 50, "check-blank-line": true}'
 permissions:
   contents: read
@@ -34,7 +34,7 @@ permissions:
 
 jobs:
   qcom-preflight-checks:
-    uses: qualcomm/qcom-reusable-workflows/.github/workflows/reusable-qcom-preflight-checks-orchestrator.yml@v2.0.0
+    uses: qualcomm/qcom-reusable-workflows/.github/workflows/reusable-qcom-preflight-checks-orchestrator.yml@v2
     with:
       # ✅ Preflight Checkers
       enable-semgrep-scan: ${{ inputs.enable-semgrep-scan }}
