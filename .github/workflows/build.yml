@@ -10,6 +10,12 @@ on:
         type: string
         description: Required build arguments
 
+      build_matrix:            # <-- added
+        required: true
+        type: string
+        description: JSON string for the build matrix
+
+
       build_script:
         required: false
         type: string
@@ -62,10 +68,6 @@ on:
         description: Optional base reference to use for building
         default: ${{ github.ref_name }}
 
-# Use rb3gen2 sdk for compiling, as sdk is similar for all the targets
-env:
-  SDK_NAME: sdk-rb3gen2.sh
-
 
 jobs:
   build:
@@ -74,6 +76,12 @@ jobs:
       labels: [ self-hosted, self-hosted, audior-prd-u2204-x64-large-od-ephem ]
     strategy:
       fail-fast: false
+      matrix:
+        build_matrix: ${{ fromJson(inputs.build_matrix) }}
+
+    env:
+      SDK_NAME: ${{ matrix.build_matrix.sdk_name }}
+
     steps:
       - name: Build docker Image
         id: get-docker-image

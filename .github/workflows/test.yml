@@ -9,6 +9,10 @@ jobs:
     runs-on:
       group: GHA-AudioReach-SelfHosted-RG
       labels: [ self-hosted, self-hosted, audior-prd-u2204-x64-large-od-ephem ]
+    strategy:
+      fail-fast: false
+      matrix:
+        build_matrix: ${{ fromJson(inputs.build_matrix) }}
     steps:
       - name: Clone repository
         uses: actions/checkout@v5

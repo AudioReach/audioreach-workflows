@@ -35,15 +35,25 @@ on:
         description: Optional base reference to use for building
         default: ${{ github.ref_name }}
 
-# Using rb3gen2 flat_build
-env:
-  IMAGE_NAME: qcom-multimedia-image-rb3gen2-core-kit.rootfs.qcomflash
+
+      build_matrix:                 # <-- added (required for matrix below)
+        required: true
+        type: string
+        description: JSON string for the build matrix
 
 jobs:
   process_image:
     runs-on:
       group: GHA-AudioReach-SelfHosted-RG
       labels: [ self-hosted, self-hosted, audior-prd-u2204-x64-large-od-ephem ]
+    strategy:
+      fail-fast: false
+      matrix:
+        build_matrix: ${{ fromJson(inputs.build_matrix) }}
+
+    env:
+      IMAGE_NAME: ${{ matrix.build_matrix.image_name }}
+
     steps:
       - name: Build docker Image
         id: get-docker-image
