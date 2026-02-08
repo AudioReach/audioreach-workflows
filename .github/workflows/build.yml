@@ -64,7 +64,7 @@ on:
 
 # Use rb3gen2 sdk for compiling, as sdk is similar for all the targets
 env:
-  SDK_NAME: sdk-rb3gen2.sh
+  SDK_NAME: sdk-rb3gen2-core-kit.sh
 
 
 jobs:
