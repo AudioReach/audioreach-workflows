@@ -10,7 +10,7 @@ on:
         type: string
         description: Required build arguments
 
-      build_matrix:            # <-- added
+      build_matrix:            
         required: true
         type: string
         description: JSON string for the build matrix

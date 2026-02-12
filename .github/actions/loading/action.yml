@@ -13,9 +13,9 @@ outputs:
   build_args:
     description: The build arguments
     value: ${{ steps.parse_args.outputs.build_args }}
-  build_matrix:                            # <-- renamed
+  build_matrix:
     description: JSON to be used as a matrix via fromJSON()
-    value: ${{ steps.parse_matrix.outputs.build_matrix }}   # <-- updated
+    value: ${{ steps.parse_matrix.outputs.build_matrix }}
 
 runs:
   using: 'composite'
@@ -74,6 +74,6 @@ runs:
               const matrix = { include };
               const out = JSON.stringify(matrix);
               core.info(`Matrix JSON: ${out}`);
-              core.setOutput('build_matrix', out);     # <-- updated
+              core.setOutput('build_matrix', out);
             }
           }
