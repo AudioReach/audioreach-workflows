@@ -11,6 +11,14 @@ on:
         type: string
         default: 'ci/build_options.txt'
 
+      
+      target_image_file:                 # <-- added
+        description: JSON file to parse as matrix (e.g., Target_image.json)
+        required: false
+        type: string
+        default: 'target_image.json'
+
+
       event_name:
         required: false
         type: string
@@ -39,8 +47,9 @@ on:
       build_args:
         description: The build arguments
         value: ${{ jobs.loading.outputs.build_args }}
-      build_matrix:
-        description: JSON to be used as a matrix
+      
+      build_matrix:                      # <-- added
+        description: JSON array to be used as a matrix via fromJSON()
         value: ${{ jobs.loading.outputs.build_matrix }}
 
 jobs:
@@ -48,11 +57,11 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       build_args: ${{ steps.loading.outputs.build_args }}
-      build_matrix: ${{ steps.loading.outputs.build_matrix }}
+      build_matrix: ${{ steps.loading.outputs.build_matrix }}   # <-- added
     steps:
       - name: Sync Codebase
         id: sync
-        uses: AudioReach/audioreach-workflows/.github/actions/sync@master
+        uses: AudioReach/audioreach-workflows/.github/actions/sync@upstream
         with:
           event_name: ${{ inputs.event_name }}
           pr_ref: ${{ inputs.pr_ref }}
@@ -61,6 +70,7 @@ jobs:
 
       - name: Load Parameters
         id: loading
-        uses: AudioReach/audioreach-workflows/.github/actions/loading@master
+        uses: AudioReach/audioreach-workflows/.github/actions/loading@upstream
         with:
           build_options_file: ${{ inputs.build_options_file }}
+          target_image_file: ${{ inputs.target_image_file }}     # <-- added
