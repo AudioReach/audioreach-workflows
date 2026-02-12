@@ -49,25 +49,40 @@ runs:
         set -euo pipefail
         shopt -s nullglob
 
-        # Collect job artifacts (NOT JSON) under artifacts/ (supports parallel jobs)
-        testjobs=(artifacts/${{ inputs.prefix }})
+        # With merge-multiple: true, artifacts are FLAT files in ./artifacts/
+        # Examples seen: artifacts/test-results-142287  (no extension)
+        # Collect both families of files (with or without .json)
+        testjobs=( \
+          artifacts/${{ inputs.prefix }} \
+          artifacts/test-results-* \
+          artifacts/${{ inputs.prefix }}.* \
+          artifacts/test-results-*.json \
+        )
 
+        # Filter out non-existent patterns (nullglob handles this).
         if [ ${#testjobs[@]} -eq 0 ]; then
-          echo ":warning: No LAVA job artifacts found matching '${{ inputs.prefix }}' under ./artifacts" > "${{ inputs.summary_file_name }}"
+          {
+            echo "### LAVA Test Summary"
+            echo
+            echo ":warning: No LAVA job artifacts found under \`./artifacts\`."
+            echo
+            echo "- Checked patterns: \`${{ inputs.prefix }}\`, \`${{ inputs.prefix }}.*\`, \`test-results-*\`, \`test-results-*.json\`"
+            echo "- Note: \`merge-multiple: true\` flattens files; there are no per-artifact directories."
+          } > "${{ inputs.summary_file_name }}"
           exit 0
         fi
 
-        # Helper: derive JOB_ID from common artifact names like:
-        #   test-job-<ID>
-        #   test-results-<ID> (we ignore these for the main loop)
+        # Helper: derive JOB_ID from **file name** (supports with/without .json)
         job_id_from_path() {
           local p="$1"
           local b
           b="$(basename "$p")"
           case "$b" in
-            test-job-*)      echo "${b#test-job-}" ;;
-            test-results-*)  echo "${b#test-results-}" ;;
-            *)               echo "" ;;
+            test-job-*.json)      echo "${b#test-job-}"     | sed 's/\.json$//' ;;
+            test-results-*.json)  echo "${b#test-results-}" | sed 's/\.json$//' ;;
+            test-job-*)           echo "${b#test-job-}" ;;
+            test-results-*)       echo "${b#test-results-}" ;;
+            *)                    echo "" ;;
           esac
         }
 
@@ -75,7 +90,6 @@ runs:
         INPUT=$(
           for TESTJOB in "${testjobs[@]}"; do
             JOB_ID="$(job_id_from_path "$TESTJOB")"
-            # Only process artifacts that actually encode a job id
             [ -n "$JOB_ID" ] || continue
 
             JOB_URL="https://lava.infra.foundries.io/results/${JOB_ID}"
@@ -87,7 +101,6 @@ runs:
             TEST_RESULTS="{}"
             if [ "${JOB_STATE}" = "Finished" ] && [ "${JOB_HEALTH}" = "Complete" ]; then
               JOB_SUITES=$(curl -s "https://lava.infra.foundries.io/api/v0.2/jobs/${JOB_ID}/suites/")
-              # Build map of test_name -> {url, result}
               TEST_RESULTS=$(
                 for SUITE in $(echo "$JOB_SUITES" | jq -r -c ".results[]"); do
                   SUITE_NAME=$(echo "$SUITE" | jq -r ".name")
@@ -95,7 +108,6 @@ runs:
                   SUITE_TESTS=$(curl -s "https://lava.infra.foundries.io/api/v0.2/jobs/${JOB_ID}/suites/${SUITE_ID}/tests/")
 
                   if [ "$SUITE_NAME" != "lava" ]; then
-                    # Pair names and results
                     paste -d '|' \
                       <(echo "$SUITE_TESTS" | jq -r -c ".results[] | .name") \
                       <(echo "$SUITE_TESTS" | jq -r -c ".results[] | .result") \
@@ -107,7 +119,6 @@ runs:
                         fi
                       done
                   else
-                    # Provide a "boot" pseudo-test as pass
                     TEST_NAME="boot"
                     TEST_URL="${JOB_URL}"
                     TEST_RESULT_OBJ=$(jq --arg url "$TEST_URL" --arg result "pass" -n -c '$ARGS.named')
@@ -117,7 +128,6 @@ runs:
               )
             fi
 
-            # Emit a pair for this device type
             jq -n -c --arg key "$JOB_DEVICE_TYPE" --argjson value "$TEST_RESULTS" '$ARGS.named'
           done | jq -s -c 'reduce .[] as $i ({}; .[$i.key] = ((.[$i.key] // {}) + $i.value))'
         )
@@ -143,14 +153,12 @@ runs:
           done
           echo
 
-          # Separator
           printf "| ---- |"
           for _ in $DEVICES; do
             printf " ---- |"
           done
           echo
 
-          # Rows
           for R in $RESULTS; do
             printf "| %s |" "$R"
             for D in $DEVICES; do
@@ -188,7 +196,7 @@ runs:
           JOB_DEVICE_TYPE=$(echo "$JOB_DETAILS" | jq -r ".requested_device_type")
           echo "| [${JOB_ID}](${JOB_URL}) | ${JOB_DEVICE_TYPE} | ${JOB_STATE} | ${JOB_HEALTH} |" >> "${{ inputs.summary_file_name }}"
         done
-
+        
     - name: Upload summary
       id: upload-summary
       uses: actions/upload-artifact@v6
