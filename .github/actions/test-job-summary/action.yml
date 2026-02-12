@@ -21,12 +21,17 @@ runs:
   using: "composite"
 
   steps:
-      - name: Download Artifacts
+      
+      - name: Download required artifacts only (skip dockerbuild)
         uses: actions/download-artifact@v6
+        continue-on-error: true
         with:
-          github-token: ${{ inputs.gh_token }}
-          run-id: ${{ inputs.build_id }}
-          path: artifacts
+          pattern: |
+            test-job*
+            test-results-*
+            presigned_url_*.txt
+            merge-multiple: false
+            path: artifacts
 
       - name: "List files"
         shell: bash
