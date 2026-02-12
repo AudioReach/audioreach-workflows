@@ -12,7 +12,7 @@ inputs:
     description: JSON file to parse as matrix (e.g., Target_image.json)
     required: true
     type: string
-    default: '../../target_image.json'
+    default: 'target_image.json'
 
 outputs:
   build_args:
