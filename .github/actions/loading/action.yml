@@ -12,7 +12,7 @@ inputs:
     description: Path to Target_image.json relative to the action repo
     required: true
     type: string
-    default: 'target_image.json'
+    default: '../../../target_image.json'
 
 outputs:
   build_args:
