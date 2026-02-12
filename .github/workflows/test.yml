@@ -305,10 +305,7 @@ jobs:
   publish-test-summary:
     name: "Publish Tests Summary"
     needs: [submit_lava]
-    if: |
-      always()
-      && contains(needs.*.result, 'success')
-      && !contains(needs.*.result, 'failure')
+    if: ${{ always() }}
     runs-on: ubuntu-latest
     permissions:
       checks: write
