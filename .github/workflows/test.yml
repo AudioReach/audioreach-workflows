@@ -106,8 +106,8 @@ jobs:
 
           # IMPORTANT: raw sed class (no HTML-escaped &)
           ESCAPED_URL=$(printf '%s\n' "$BUILD_DOWNLOAD_URL" | sed 's/[&/?=]/\\&/g')
-          # sed -i "s|{{BUILD_DOWNLOAD_URL}}|${ESCAPED_URL}|g" "${target_file}"
-          echo "${BUILD_DOWNLOAD_URL}" >> "${target_file}"
+          sed -i "s|{{BUILD_DOWNLOAD_URL}}|${ESCAPED_URL}|g" "${target_file}"
+          # echo "${BUILD_DOWNLOAD_URL}" >> "${target_file}"
           sed -i "s|{{BUILD_FILE_NAME}}|${BUILD_FILE_NAME}|g" "${target_file}"
           sed -i "s|{{GITHUB_RUN_ID}}|${GITHUB_RUN_ID}|g" "${target_file}"
 
