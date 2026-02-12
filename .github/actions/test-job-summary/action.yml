@@ -10,7 +10,7 @@ inputs:
     required: true
   prefix:
     description: "Prefix for the compressed file that is uploaded as workflow artifact"
-    default: test-job*
+    default: test-job-*
   summary_file_name:
     description: "File name that is used to save test job summary"
     default: step-summary.txt
@@ -25,7 +25,7 @@ runs:
 
   steps:
     - name: Download required artifacts only (skip dockerbuild)
-        # This step downloads artifacts produced by parallel jobs
+      # This step downloads artifacts produced by parallel jobs
       uses: actions/download-artifact@v6
       continue-on-error: true
       with:
@@ -49,18 +49,35 @@ runs:
         set -euo pipefail
         shopt -s nullglob
 
-        # Collect job JSONs under artifacts/ (supports parallel jobs)
-        testjobs=(artifacts/${{ inputs.prefix }}.json)
+        # Collect job artifacts (NOT JSON) under artifacts/ (supports parallel jobs)
+        testjobs=(artifacts/${{ inputs.prefix }})
 
         if [ ${#testjobs[@]} -eq 0 ]; then
-          echo ":warning: No LAVA job artifacts found matching '${{ inputs.prefix }}.json' under ./artifacts" > "${{ inputs.summary_file_name }}"
+          echo ":warning: No LAVA job artifacts found matching '${{ inputs.prefix }}' under ./artifacts" > "${{ inputs.summary_file_name }}"
           exit 0
         fi
 
-        # Build INPUT by querying LAVA API for each job
+        # Helper: derive JOB_ID from common artifact names like:
+        #   test-job-<ID>
+        #   test-results-<ID> (we ignore these for the main loop)
+        job_id_from_path() {
+          local p="$1"
+          local b
+          b="$(basename "$p")"
+          case "$b" in
+            test-job-*)      echo "${b#test-job-}" ;;
+            test-results-*)  echo "${b#test-results-}" ;;
+            *)               echo "" ;;
+          esac
+        }
+
+        # Build INPUT by querying LAVA API for each job id
         INPUT=$(
           for TESTJOB in "${testjobs[@]}"; do
-            JOB_ID=$(jq -r ".id" < "${TESTJOB}")
+            JOB_ID="$(job_id_from_path "$TESTJOB")"
+            # Only process artifacts that actually encode a job id
+            [ -n "$JOB_ID" ] || continue
+
             JOB_URL="https://lava.infra.foundries.io/results/${JOB_ID}"
             JOB_DETAILS=$(curl -s "https://lava.infra.foundries.io/api/v0.2/jobs/${JOB_ID}/")
             JOB_HEALTH=$(echo "$JOB_DETAILS" | jq -r ".health")
@@ -162,7 +179,8 @@ runs:
 
         # Append job list
         for TESTJOB in "${testjobs[@]}"; do
-          JOB_ID=$(jq -r ".id" < "${TESTJOB}")
+          JOB_ID="$(job_id_from_path "$TESTJOB")"
+          [ -n "$JOB_ID" ] || continue
           JOB_URL="https://lava.infra.foundries.io/results/${JOB_ID}"
           JOB_DETAILS=$(curl -s "https://lava.infra.foundries.io/api/v0.2/jobs/${JOB_ID}/")
           JOB_HEALTH=$(echo "$JOB_DETAILS" | jq -r ".health")
