@@ -10,7 +10,7 @@ on:
         type: string
         description: Required build arguments
 
-      build_matrix:            
+      build_matrix:            # <-- added
         required: true
         type: string
         description: JSON string for the build matrix
@@ -77,10 +77,12 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        build_matrix: ${{ fromJson(inputs.build_matrix) }}
+        build_matrix: ${{ fromJSON(inputs.build_matrix) }}
 
     env:
       SDK_NAME: ${{ matrix.build_matrix.sdk_name }}
+      IMAGE_NAME: ${{ matrix.build_matrix.image_name }}
+
 
     steps:
       - name: Build docker Image
@@ -134,5 +136,5 @@ jobs:
         run: |
           echo "Cleaning Up Workspace"
           rm -rf install/ ${{ env.SDK_NAME }}
-          rm -rf build/ ${{ github.workspace }}/build.tar
+          rm -rf build/ ${{ github.workspace }}/build_$IMAGE_NAME.tar
           echo "Workspace cleaned up successfully"
