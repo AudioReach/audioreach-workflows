@@ -70,7 +70,7 @@ jobs:
       - name: Print trigger
         run: |
           echo "Triggered by ${{ github.event_name }}"
-          echo "Build URL: --->"
+          echo "Build URL: ---&gt;"
           echo "${{ steps.get_build_url.outputs.build_url }}"
 
       - name: "List jobs"
@@ -99,15 +99,14 @@ jobs:
             NEW_MACHINE="$DEVICE_TYPE"
           fi
 
-          BUILD_FILE_NAME="qcom-multimedia-image-${NEW_MACHINE}.rootfs.qcomflash.tar.gz"
+          BUILD_FILE_NAME="qcom-multimedia-image-${DEVICE_TYPE}${KERNEL_SUFFIX}.rootfs.qcomflash.tar.gz"
           BUILD_DOWNLOAD_URL="${{ steps.get_build_url.outputs.build_url }}"
           sed -i "s|{{DEVICE_TYPE}}|${DEVICE_TYPE}|g" "${target_file}"
           sed -i "s|{{GITHUB_SHA}}|${GITHUB_SHA}|g" "${target_file}"
 
-          # IMPORTANT: raw sed class (no HTML-escaped &)
+          # IMPORTANT: use raw sed class (no HTML-escaped &amp;) and replace the placeholder
           ESCAPED_URL=$(printf '%s\n' "$BUILD_DOWNLOAD_URL" | sed 's/[&/?=]/\\&/g')
-          # sed -i "s|{{BUILD_DOWNLOAD_URL}}|${ESCAPED_URL}|g" "${target_file}"
-          echo "${BUILD_DOWNLOAD_URL}" >> "${target_file}"
+          sed -i "s|{{BUILD_DOWNLOAD_URL}}|${ESCAPED_URL}|g" "${target_file}"
           sed -i "s|{{BUILD_FILE_NAME}}|${BUILD_FILE_NAME}|g" "${target_file}"
           sed -i "s|{{GITHUB_RUN_ID}}|${GITHUB_RUN_ID}|g" "${target_file}"
 
@@ -224,7 +223,7 @@ jobs:
             echo "AUTO_LOGIN_PASSWORD_PROMPT=Password" >> "${VARS_OUT_PATH}/gh-variables.ini"
             echo "AUTO_LOGIN_PASSWORD=oelinux123"     >> "${VARS_OUT_PATH}/gh-variables.ini"
           fi
-          echo "IMAGE_FILE_NAME=${IMAGE_TYPE}-${NEW_MACHINE}.rootfs.qcomflash.tar.gz" >> "${VARS_OUT_PATH}/gh-variables.ini"
+          echo "IMAGE_FILE_NAME=${IMAGE_TYPE}-${DEVICE_TYPE}${KERNEL_SUFFIX}.rootfs.qcomflash.tar.gz" >> "${VARS_OUT_PATH}/gh-variables.ini"
 
           # Use the presigned URL as-is (no trailing slash) to avoid breaking query params.
           BUILD_URL="${{ steps.get_build_url.outputs.build_url }}"
@@ -325,13 +324,27 @@ jobs:
           build_id: ${{ github.run_id }}
           gh_token: ${{ secrets.GITHUB_TOKEN }}
           summary_file_name: test_job_summary
-
-      - name: Download Summary
+      
+      # Download ALL matching summary artifacts from parallel jobs and put into one folder.
+      - name: Download Summaries
         uses: actions/download-artifact@v6
-        continue-on-error: true
         with:
-          artifact-ids: ${{ steps.generate-summary.outputs.artifact_id }}
+          pattern: test_job_summary*          # match all parallel summaries (e.g., test_job_summary, test_job_summary_1, ...)
+          merge-multiple: true                # place all matched artifact contents into a single folder
+          path: summaries
 
       - name: Publish Test Job Details
         run: |
-            cat test_job_summary >> $GITHUB_STEP_SUMMARY
+          shopt -s nullglob
+          files=(summaries/test_job_summary*)
+          if [ ${#files[@]} -eq 0 ]; then
+            echo ":warning: No test job summaries were found to publish." >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+
+          echo "## LAVA Test Job Summaries" >> "$GITHUB_STEP_SUMMARY"
+          for f in "${files[@]}"; do
+            echo "" >> "$GITHUB_STEP_SUMMARY"
+            echo "### $(basename "$f")" >> "$GITHUB_STEP_SUMMARY"
+            cat "$f" >> "$GITHUB_STEP_SUMMARY"
+          done
