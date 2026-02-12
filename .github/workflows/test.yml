@@ -328,6 +328,7 @@ jobs:
 
       - name: Download Summary
         uses: actions/download-artifact@v6
+        continue-on-error: true
         with:
           artifact-ids: ${{ steps.generate-summary.outputs.artifact_id }}
 
