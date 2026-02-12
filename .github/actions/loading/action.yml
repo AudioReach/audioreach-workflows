@@ -8,6 +8,11 @@ inputs:
     required: true
     type: string
     default: 'ci/build_options.txt'
+  target_image_file:
+    description: Path to Target_image.json relative to the action repo
+    required: true
+    type: string
+    default: 'target_image.json'
 
 outputs:
   build_args:
@@ -49,7 +54,7 @@ runs:
       with:
         script: |
           const fs = require('fs');
-          const p = `${{ github.workspace }}/${{ inputs.target_image_file }}`;
+          const p = `${{ github.action_path }}/${{ inputs.target_image_file }}`;
 
           if (!fs.existsSync(p)) {
             core.setFailed(`Target image file not found: ${p}`);
