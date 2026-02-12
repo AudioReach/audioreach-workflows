@@ -320,7 +320,7 @@ jobs:
 
       - name: Generate Summary
         id: generate-summary
-        uses: ./.github/actions/test-job-summary
+        uses: AudioReach/audioreach-workflows/.github/actions/test-job-summary@upstream
         with:
           build_id: ${{ github.run_id }}
           gh_token: ${{ secrets.GITHUB_TOKEN }}
