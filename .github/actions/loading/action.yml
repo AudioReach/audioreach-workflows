@@ -37,7 +37,7 @@ runs:
 
           try {
             if (fs.existsSync(path)) {
-              options = fs.readFileSync(path).toString().trim().split('\n').join(' ');
+              options = fs.readFileSync(path, 'utf8').toString().trim().split('\n').join(' ');
             } else {
               console.log(`⚠️ File not found: ${path}. Proceeding with empty options.`);
             }
