@@ -35,15 +35,25 @@ on:
         description: Optional base reference to use for building
         default: ${{ github.ref_name }}
 
-# Using rb3gen2 flat_build
-env:
-  IMAGE_NAME: qcom-multimedia-image-rb3gen2-core-kit.rootfs.qcomflash
+
+      build_matrix:                 # <-- added (required for matrix below)
+        required: true
+        type: string
+        description: JSON string for the build matrix
 
 jobs:
   process_image:
     runs-on:
       group: GHA-AudioReach-SelfHosted-RG
       labels: [ self-hosted, self-hosted, audior-prd-u2204-x64-large-od-ephem ]
+    strategy:
+      fail-fast: false
+      matrix:
+        build_matrix: ${{ fromJSON(inputs.build_matrix) }}
+
+    env:
+      IMAGE_NAME: ${{ matrix.build_matrix.image_name }}
+
     steps:
       - name: Build docker Image
         id: get-docker-image
@@ -62,7 +72,7 @@ jobs:
         id: download_build_artifact
         uses: actions/download-artifact@v6
         with:
-          name: build.tar
+          name: build_${{ env.IMAGE_NAME }}.tar
           path: ${{ github.workspace }}
 
       - name: Extract build artifact
@@ -74,7 +84,7 @@ jobs:
 
           mkdir -p ${{ github.workspace }}/build
           echo "Extracting the build artifact"
-          tar -xvf ${{ github.workspace }}/build.tar -C ${{ github.workspace }}/build
+          tar -xvf ${{ github.workspace }}/build_${{ env.IMAGE_NAME }}.tar -C ${{ github.workspace }}/build
           echo "Build artifact extracted successfully"
 
       - name: Pull meta-audioreach pre compiled image
@@ -83,7 +93,8 @@ jobs:
         with:
           s3_bucket: qli-prd-audior-gh-artifacts
           mode: download
-          download_filename: ${{ env.IMAGE_NAME }}.tar.gz
+          #qcom-multimedia-image-rb3gen2-core-kit.rootfs.qcomflash.tar.gz
+          download_filename: qcom-multimedia-image-${{ env.IMAGE_NAME }}.rootfs.qcomflash.tar.gz
           location: AudioReach/meta-audioreach/post_merge_build
 
       - name: Extract image and mount
@@ -94,13 +105,13 @@ jobs:
           set -e
 
           echo "Extracting the image"
-          tar -xvf ${{ env.IMAGE_NAME }}.tar.gz
-          ROOTFS_IMG=$(tar -tf ${{ env.IMAGE_NAME }}.tar.gz | grep 'rootfs.img$')
+          tar -xvf qcom-multimedia-image-${{ env.IMAGE_NAME }}.rootfs.qcomflash.tar.gz
+          ROOTFS_IMG=$(tar -tf qcom-multimedia-image-${{ env.IMAGE_NAME }}.rootfs.qcomflash.tar.gz | grep 'rootfs.img$')
           ROOTFS_DIR=$(dirname "$ROOTFS_IMG")
           # Export as GitHub Actions environment variables
           echo "ROOTFS_IMG=$ROOTFS_IMG" >> $GITHUB_ENV
           echo "ROOTFS_DIR=$ROOTFS_DIR" >> $GITHUB_ENV
-          rm -rf ${{ env.IMAGE_NAME }}.tar.gz
+          rm -rf qcom-multimedia-image-${{ env.IMAGE_NAME }}.rootfs.qcomflash.tar.gz
           echo "Image extracted successfully"
 
           ls -l "$ROOTFS_DIR/rootfs.img"
@@ -140,7 +151,7 @@ jobs:
           set -e
           echo $PWD
           echo "Creating tar image for qcomflash directory"
-          tar -czvf ${{ env.IMAGE_NAME }}.tar.gz ${{ env.ROOTFS_DIR }}/
+          tar -czvf qcom-multimedia-image-${{ env.IMAGE_NAME }}.rootfs.qcomflash.tar.gz ${{ env.ROOTFS_DIR }}/
           echo "Tar image created successfully"
 
       - name: Upload tar image
@@ -148,5 +159,5 @@ jobs:
         uses: AudioReach/audioreach-workflows/.github/actions/aws-s3-exchanger@master
         with:
           s3_bucket: qli-prd-audior-gh-artifacts
-          local_file: ${{ github.workspace }}/${{ env.IMAGE_NAME }}.tar.gz
+          local_file: ${{ github.workspace }}/qcom-multimedia-image-${{ env.IMAGE_NAME }}.rootfs.qcomflash.tar.gz
           mode: upload
