@@ -296,3 +296,50 @@ jobs:
             echo "### lava-test-plans" >> $GITHUB_STEP_SUMMARY
             echo "Submitted job: \`${FIRST_JOB}\`" >> $GITHUB_STEP_SUMMARY
           fi
+  publish-test-summary:
+    name: "Publish Tests Summary"
+    needs: [submit_lava]
+    if: ${{ always() }}
+    runs-on: ubuntu-latest
+    permissions:
+      checks: write
+      pull-requests: write
+    outputs:
+      summary_id: ${{ steps.generate-summary.outputs.artifact_id }}
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Generate Summary
+        id: generate-summary
+        uses: AudioReach/audioreach-workflows/.github/actions/test-job-summary@upstream
+        with:
+          build_id: ${{ github.run_id }}
+          gh_token: ${{ secrets.GITHUB_TOKEN }}
+          summary_file_name: test_job_summary
+      
+      # Download ALL matching summary artifacts from parallel jobs and put into one folder.
+      - name: Download Summaries
+        uses: actions/download-artifact@v6
+        with:
+          pattern: test_job_summary*          # match all parallel summaries (e.g., test_job_summary, test_job_summary_1, ...)
+          merge-multiple: true                # place all matched artifact contents into a single folder
+          path: summaries
+
+      - name: Publish Test Job Details
+        run: |
+          shopt -s nullglob
+          files=(summaries/test_job_summary*)
+          if [ ${#files[@]} -eq 0 ]; then
+            echo ":warning: No test job summaries were found to publish." >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+
+          echo "## LAVA Test Job Summaries" >> "$GITHUB_STEP_SUMMARY"
+          for f in "${files[@]}"; do
+            echo "" >> "$GITHUB_STEP_SUMMARY"
+            echo "### $(basename "$f")" >> "$GITHUB_STEP_SUMMARY"
+            cat "$f" >> "$GITHUB_STEP_SUMMARY"
+          done
