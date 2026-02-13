@@ -304,25 +304,11 @@ jobs:
           gh_token: ${{ secrets.GITHUB_TOKEN }}
           summary_file_name: test_job_summary
       
-      - name: Download Summaries
+      - name: Download Summary
         uses: actions/download-artifact@v6
         with:
-          pattern: test_job_summary*
-          merge-multiple: true
-          path: summaries
+          artifact-ids: ${{ steps.generate-summary.outputs.artifact_id }}
 
       - name: Publish Test Job Details
         run: |
-          shopt -s nullglob
-          files=(summaries/test_job_summary*)
-          if [ ${#files[@]} -eq 0 ]; then
-            echo ":warning: No test job summaries were found to publish." >> "$GITHUB_STEP_SUMMARY"
-            exit 0
-          fi
-
-          echo "## LAVA Test Job Summaries" >> "$GITHUB_STEP_SUMMARY"
-          for f in "${files[@]}"; do
-            echo "" >> "$GITHUB_STEP_SUMMARY"
-            echo "### $(basename "$f")" >> "$GITHUB_STEP_SUMMARY"
-            cat "$f" >> "$GITHUB_STEP_SUMMARY"
-          done
+            cat test_job_summary >> $GITHUB_STEP_SUMMARY
