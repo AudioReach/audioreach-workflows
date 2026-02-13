@@ -72,78 +72,6 @@ jobs:
           echo "Build URL: --->"
           echo "${{ steps.get_build_url.outputs.build_url }}"
 
-      - name: "List jobs"
-        id: listjobs
-        shell: bash
-        run: |
-          set -euo pipefail
-          target_file="${{ matrix.build_matrix.test_file }}"
-          if [ ! -f "$target_file" ]; then
-            echo "Target file $target_file does not exist."
-            echo "target=" >> "$GITHUB_OUTPUT"
-            exit 1
-          fi
-
-          TARGET=${target_file}
-          FIND_PATH="${TARGET#*/}"
-          # DEVICE_TYPE_PATH="${FIND_PATH%/*}"
-          DEVICE_TYPE="${{ matrix.build_matrix.machine_name }}"
-          NEW_MACHINE="$DEVICE_TYPE"
-
-
-          BUILD_FILE_NAME="qcom-multimedia-image-${{ matrix.build_matrix.image_name }}.rootfs.qcomflash.tar.gz"
-          BUILD_DOWNLOAD_URL="${{ steps.get_build_url.outputs.build_url }}"
-          sed -i "s|{{DEVICE_TYPE}}|${DEVICE_TYPE}|g" "${target_file}"
-          sed -i "s|{{GITHUB_SHA}}|${GITHUB_SHA}|g" "${target_file}"
-
-          # IMPORTANT: use raw sed class (no HTML-escaped &amp;) and replace the placeholder
-          ESCAPED_URL=$(printf '%s\n' "$BUILD_DOWNLOAD_URL" | sed 's/[&/?=]/\\&/g')
-          sed -i "s|{{BUILD_DOWNLOAD_URL}}|${ESCAPED_URL}|g" "${target_file}"
-          sed -i "s|{{BUILD_FILE_NAME}}|${BUILD_FILE_NAME}|g" "${target_file}"
-          sed -i "s|{{GITHUB_RUN_ID}}|${GITHUB_RUN_ID}|g" "${target_file}"
-
-          # ===== PASSWORD-ONLY CHANGE START =====
-          NEW_PW="oelinux123"
-
-          # Replace existing 'password:' inside the auto_login block
-          awk -v pw="$NEW_PW" '
-            BEGIN { in_auto = 0 }
-            /^ *auto_login:/ { in_auto = 1 }
-            in_auto == 1 && /^ *password:/ {
-              sub(/password:.*/, "password: " pw)
-              in_auto = 0
-            }
-            { print }
-          ' "$target_file" > "$target_file.tmp" && mv "$target_file.tmp" "$target_file"
-
-          # If no 'password:' line exists, insert it after 'username: root'
-          if ! grep -qE '^[[:space:]]*password:' "$target_file"; then
-            awk -v pw="$NEW_PW" '
-              BEGIN { in_auto = 0 }
-              {
-                print $0
-                if ($0 ~ /^ *auto_login:/) in_auto = 1
-                else if (in_auto == 1 && $0 ~ /^ *username:[[:space:]]*root/) {
-                  indent = gensub(/^([[:space:]]*).*/, "\\1", 1, $0)
-                  print indent "password_prompt: '\''Password:'\''"
-                  print indent "password: " pw
-                  in_auto = 0
-                }
-              }
-            ' "$target_file" > "$target_file.tmp" && mv "$target_file.tmp" "$target_file"
-          fi
-          # ===== PASSWORD-ONLY CHANGE END =====
-
-          echo "---- Final templated job ----"
-          cat "${target_file}"
-
-          # Outputs for later steps
-          echo "target=${target_file}" >> "$GITHUB_OUTPUT"
-          echo "device_type=${DEVICE_TYPE}" >> "$GITHUB_OUTPUT"
-
-          # Persist to env for later steps
-          echo "DEVICE_TYPE=${DEVICE_TYPE}" >> "$GITHUB_ENV"
-
       # =========================== lava-test-plans integration START ===========================
       - name: Checkout lava-test-plans
         uses: actions/checkout@v5
@@ -174,7 +102,7 @@ jobs:
           # === Plan roots as in the installed package ===
           PROJECT="meta-qcom"
           DISTRO_NAME="${{ inputs.distro_name }}"      # qcom-distro
-          MACHINE="${DEVICE_TYPE:-${{ steps.listjobs.outputs.device_type }}}"
+          #MACHINE="${DEVICE_TYPE:-${{ steps.listjobs.outputs.device_type }}}"
 
           # Map testplan input to a plan directory (pre-merge-basic lives under 'pre-merge')
           TESTPLAN_INPUT="${{ inputs.testplan }}"
@@ -185,7 +113,7 @@ jobs:
           esac
 
           echo "Using lava-test-plans project: ${PROJECT}"
-          echo "Resolved: MACHINE=${MACHINE}, DISTRO_NAME=${DISTRO_NAME}, TESTPLAN_DIR=${TESTPLAN_DIR}"
+          echo "Resolved: MACHINE=${{ matrix.build_matrix.machine_name }}, DISTRO_NAME=${DISTRO_NAME}, TESTPLAN_DIR=${TESTPLAN_DIR}"
 
           TESTPLAN_DIR_ABS="lava-test-plans/lava_test_plans/testplans/${PROJECT}/${DISTRO_NAME}/${TESTPLAN_DIR}"
           if [ ! -d "${TESTPLAN_DIR_ABS}" ]; then
