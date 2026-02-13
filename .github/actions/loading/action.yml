@@ -54,7 +54,7 @@ runs:
       with:
         script: |
           const fs = require('fs');
-          const p = `${{ github.workspace }}/${{ inputs.target_image_file }}`;
+          const p = `${{ github.action_path }}/${{ inputs.target_image_file }}`;
 
           if (!fs.existsSync(p)) {
             core.setFailed(`Target image file not found: ${p}`);
