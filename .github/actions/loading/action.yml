@@ -8,11 +8,19 @@ inputs:
     required: true
     type: string
     default: 'ci/build_options.txt'
+  target_image_file:
+    description: JSON file to parse as matrix (e.g., Target_image.json)
+    required: true
+    type: string
+    default: 'target_image.json'
 
 outputs:
   build_args:
     description: The build arguments
     value: ${{ steps.parse_args.outputs.build_args }}
+  build_matrix:
+    description: JSON to be used as a matrix via fromJSON()
+    value: ${{ steps.parse_matrix.outputs.build_matrix }}
 
 runs:
   using: 'composite'
@@ -39,3 +47,39 @@ runs:
 
           console.log(`Parsed options: "${options}"`);
           core.setOutput('build_args', options);
+
+    - name: Parse Target_image.json to matrix
+      id: parse_matrix
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const fs = require('fs');
+          const p = `${{ github.action_path }}/${{ inputs.target_image_file }}`;
+
+          if (!fs.existsSync(p)) {
+            core.setFailed(`Target image file not found: ${p}`);
+          } else {
+            let raw = fs.readFileSync(p, 'utf8');
+            let data;
+            try {
+              data = JSON.parse(raw);
+            } catch (e) {
+              core.setFailed(`Invalid JSON in ${p}: ${e.message}`);
+            }
+
+            if (data) {
+              const include = Object.entries(data).map(([target, cfg]) => ({
+                target,
+                ...cfg,
+                target_name: target,
+                test_file: cfg.Test_file,
+                sdk_name: cfg.SDK_name,
+                image_name: cfg.Image_name,
+                machine_name: cfg.Machine_name
+              }));
+              // Output a FLAT ARRAY to match strategy.matrix.build_matrix: fromJson(...)
+              const out = JSON.stringify(include);
+              core.info(`Build matrix (flat): ${out}`);
+              core.setOutput('build_matrix', out);
+            }
+          }
