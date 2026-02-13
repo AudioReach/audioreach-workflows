@@ -244,7 +244,7 @@ jobs:
 
       - name: Generate Summary
         id: generate-summary
-        uses: AudioReach/audioreach-workflows/.github/actions/test-job-summary@upstream
+        uses: AudioReach/audioreach-workflows/.github/actions/test-job-summary@publish
         with:
           build_id: ${{ github.run_id }}
           gh_token: ${{ secrets.GITHUB_TOKEN }}
