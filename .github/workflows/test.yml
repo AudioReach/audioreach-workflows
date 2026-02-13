@@ -86,8 +86,8 @@ jobs:
 
           TARGET=${target_file}
           FIND_PATH="${TARGET#*/}"
-          DEVICE_TYPE_PATH="${FIND_PATH%/*}"
-          DEVICE_TYPE="${DEVICE_TYPE_PATH#*/}"
+          # DEVICE_TYPE_PATH="${FIND_PATH%/*}"
+          DEVICE_TYPE="${{ matrix.build_matrix.machine_name }}"
           NEW_MACHINE="$DEVICE_TYPE"
 
 
@@ -223,7 +223,7 @@ jobs:
           fi
           echo "BUILD_DOWNLOAD_URL=${BUILD_URL}" >> "${VARS_OUT_PATH}/gh-variables.ini"
           echo "ROOTFS_URL=${BUILD_URL}" >> "${VARS_OUT_PATH}/gh-variables.ini"
-          echo "DEVICE_TYPE=${MACHINE}" >> "${VARS_OUT_PATH}/gh-variables.ini"
+          echo "DEVICE_TYPE=${{ matrix.build_matrix.image_name }}" >> "${VARS_OUT_PATH}/gh-variables.ini"
 
           echo "==== gh-variables.ini ===="
           cat "${VARS_OUT_PATH}/gh-variables.ini"
@@ -232,11 +232,11 @@ jobs:
             --dry-run \
             --variables "${VARS_OUT_PATH}/gh-variables.ini" \
             --test-plan "${PROJECT}/${DISTRO_NAME}/${TESTPLAN_DIR}" \
-            --device-type "projects/${PROJECT}/devices/${MACHINE}" \
-            --dry-run-path "${JOBS_OUT_PATH}/${MACHINE}-${DISTRO_NAME}-${TESTPLAN_DIR}" || true
+            --device-type "projects/${PROJECT}/devices/${{ matrix.build_matrix.machine_name }}" \
+            --dry-run-path "${JOBS_OUT_PATH}/${{ matrix.build_matrix.image_name }}-${DISTRO_NAME}-${TESTPLAN_DIR}" || true
 
           # Expose the subdir where jobs were generated (local + export)
-          JOBS_SUBDIR="${JOBS_OUT_PATH}/${MACHINE}-${DISTRO_NAME}-${TESTPLAN_DIR}"
+          JOBS_SUBDIR="${JOBS_OUT_PATH}/${{ matrix.build_matrix.image_name }}-${DISTRO_NAME}-${TESTPLAN_DIR}"
           echo "JOBS_SUBDIR=${JOBS_SUBDIR}" >> $GITHUB_ENV
 
           # Optionally verify and surface the first YAML (used for single submission)
@@ -249,7 +249,7 @@ jobs:
           fi
 
           # Artifact name for upload
-          echo "ARTIFACT_NAME=${{ inputs.prefix }}-${MACHINE}-${DISTRO_NAME}" >> $GITHUB_ENV
+          echo "ARTIFACT_NAME=${{ inputs.prefix }}-${{ matrix.build_matrix.image_name }}-${DISTRO_NAME}" >> $GITHUB_ENV
 
       - name: "List files (lava-test-plans output)"
         shell: bash
@@ -284,7 +284,7 @@ jobs:
           echo "${GITHUB_WORKSPACE}"
           ls -R "${GITHUB_WORKSPACE}"
           echo "list files called "
-          tree "${{ env.JOBS_OUT_PATH }}"
+          # tree "${{ env.JOBS_OUT_PATH }}"
           echo "## Test Job Summary" >> $GITHUB_STEP_SUMMARY
           if [ "${{ steps.submit_job.outcome || 'failure' }}" == "success" ]; then
             echo ":heavy_check_mark: Template-based job completed successfully." >> $GITHUB_STEP_SUMMARY
