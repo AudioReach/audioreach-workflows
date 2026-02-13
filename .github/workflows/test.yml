@@ -70,7 +70,7 @@ jobs:
       - name: Print trigger
         run: |
           echo "Triggered by ${{ github.event_name }}"
-          echo "Build URL: --->"
+          echo "Build URL: ---&gt;"
           echo "${{ steps.get_build_url.outputs.build_url }}"
 
       - name: "List jobs"
@@ -91,7 +91,7 @@ jobs:
           DEVICE_TYPE="${DEVICE_TYPE_PATH#*/}"
           NEW_MACHINE="$DEVICE_TYPE"
 
-          # ---- Normalize kernel suffix ----
+          # ---- Normalize kernel suffix from device-type path ----
           KERNEL_SUFFIX=""
           if [ "$DEVICE_TYPE" = "rb3gen2-core-kit-6.18" ]; then
             DEVICE_TYPE="rb3gen2-core-kit"
@@ -104,7 +104,7 @@ jobs:
           sed -i "s|{{DEVICE_TYPE}}|${DEVICE_TYPE}|g" "${target_file}"
           sed -i "s|{{GITHUB_SHA}}|${GITHUB_SHA}|g" "${target_file}"
 
-          # FIXED: correct sed escaping
+          # IMPORTANT: use raw sed class (no HTML-escaped &amp;) and replace the placeholder
           ESCAPED_URL=$(printf '%s\n' "$BUILD_DOWNLOAD_URL" | sed 's/[&/?=]/\\&/g')
           sed -i "s|{{BUILD_DOWNLOAD_URL}}|${ESCAPED_URL}|g" "${target_file}"
           sed -i "s|{{BUILD_FILE_NAME}}|${BUILD_FILE_NAME}|g" "${target_file}"
@@ -113,6 +113,7 @@ jobs:
           # ===== PASSWORD-ONLY CHANGE START =====
           NEW_PW="oelinux123"
 
+          # Replace existing 'password:' inside the auto_login block
           awk -v pw="$NEW_PW" '
             BEGIN { in_auto = 0 }
             /^ *auto_login:/ { in_auto = 1 }
@@ -123,6 +124,7 @@ jobs:
             { print }
           ' "$target_file" > "$target_file.tmp" && mv "$target_file.tmp" "$target_file"
 
+          # If no 'password:' line exists, insert it after 'username: root'
           if ! grep -qE '^[[:space:]]*password:' "$target_file"; then
             awk -v pw="$NEW_PW" '
               BEGIN { in_auto = 0 }
@@ -143,12 +145,13 @@ jobs:
           echo "---- Final templated job ----"
           cat "${target_file}"
 
+          # Outputs for later steps
           echo "target=${target_file}" >> "$GITHUB_OUTPUT"
           echo "device_type=${DEVICE_TYPE}" >> "$GITHUB_OUTPUT"
           echo "kernel_suffix=${KERNEL_SUFFIX}" >> "$GITHUB_OUTPUT"
 
-          echo "DEVICE_TYPE=${DEVICE_TYPE}" >> "$GITHUB_ENV"
-          echo "NEW_MACHINE=${DEVICE_TYPE}" >> "$GITHUB_ENV"
+          # Persist to env for later steps
+          echo "DEVICE_TYPE=${DEVICE_TYPE}" >> "$GITHUB_ENV"; echo "NEW_MACHINE=${DEVICE_TYPE}" >> "$GITHUB_ENV"
 
       # =========================== lava-test-plans integration START ===========================
       - name: Checkout lava-test-plans
@@ -177,11 +180,13 @@ jobs:
           echo "JOBS_OUT_PATH=${JOBS_OUT_PATH}" >> $GITHUB_ENV
           mkdir -p "${VARS_OUT_PATH}" "${JOBS_OUT_PATH}"
 
+          # === Plan roots as in the installed package ===
           PROJECT="meta-qcom"
-          DISTRO_NAME="${{ inputs.distro_name }}"
+          DISTRO_NAME="${{ inputs.distro_name }}"      # qcom-distro
           MACHINE="${DEVICE_TYPE:-${{ steps.listjobs.outputs.device_type }}}"
-          KERNEL_SUFFIX="${{ steps.listjobs.outputs.kernel_suffix }}"
+          KERNEL_SUFFIX="${{ steps.listjobs.outputs.kernel_suffix }}"   # "" or "-6.18"
 
+          # Map testplan input to a plan directory (pre-merge-basic lives under 'pre-merge')
           TESTPLAN_INPUT="${{ inputs.testplan }}"
           case "$TESTPLAN_INPUT" in
             boot)  TESTPLAN_DIR="boot" ;;
@@ -189,9 +194,13 @@ jobs:
             *)     TESTPLAN_DIR="$TESTPLAN_INPUT" ;;
           esac
 
+          echo "Using lava-test-plans project: ${PROJECT}"
+          echo "Resolved: MACHINE=${MACHINE}, DISTRO_NAME=${DISTRO_NAME}, KERNEL_SUFFIX=${KERNEL_SUFFIX}, TESTPLAN_DIR=${TESTPLAN_DIR}"
+
           TESTPLAN_DIR_ABS="lava-test-plans/lava_test_plans/testplans/${PROJECT}/${DISTRO_NAME}/${TESTPLAN_DIR}"
           if [ ! -d "${TESTPLAN_DIR_ABS}" ]; then
             echo "ERROR: Test plan directory not found: ${TESTPLAN_DIR_ABS}"
+            ls -al "lava-test-plans/lava_test_plans/testplans/${PROJECT}/${DISTRO_NAME}" || true
             exit 1
           fi
 
@@ -216,10 +225,18 @@ jobs:
           fi
           echo "IMAGE_FILE_NAME=${IMAGE_TYPE}-${DEVICE_TYPE}${KERNEL_SUFFIX}.rootfs.qcomflash.tar.gz" >> "${VARS_OUT_PATH}/gh-variables.ini"
 
+          # Use the presigned URL as-is (no trailing slash) to avoid breaking query params.
           BUILD_URL="${{ steps.get_build_url.outputs.build_url }}"
+          if [ -z "${BUILD_URL}" ]; then
+            echo "BUILD_URL missing"
+            exit 1
+          fi
           echo "BUILD_DOWNLOAD_URL=${BUILD_URL}" >> "${VARS_OUT_PATH}/gh-variables.ini"
           echo "ROOTFS_URL=${BUILD_URL}" >> "${VARS_OUT_PATH}/gh-variables.ini"
           echo "DEVICE_TYPE=${MACHINE}" >> "${VARS_OUT_PATH}/gh-variables.ini"
+
+          echo "==== gh-variables.ini ===="
+          cat "${VARS_OUT_PATH}/gh-variables.ini"
 
           lava-test-plans \
             --dry-run \
@@ -228,15 +245,20 @@ jobs:
             --device-type "projects/${PROJECT}/devices/${MACHINE}" \
             --dry-run-path "${JOBS_OUT_PATH}/${MACHINE}-${DISTRO_NAME}${KERNEL_SUFFIX}-${TESTPLAN_DIR}" || true
 
+          # Expose the subdir where jobs were generated (local + export)
           JOBS_SUBDIR="${JOBS_OUT_PATH}/${MACHINE}-${DISTRO_NAME}${KERNEL_SUFFIX}-${TESTPLAN_DIR}"
           echo "JOBS_SUBDIR=${JOBS_SUBDIR}" >> $GITHUB_ENV
 
+          # Optionally verify and surface the first YAML (used for single submission)
           FIRST_JOB=$(find "${JOBS_SUBDIR}" -type f -name '*.yaml' | sort | head -n 1 || true)
           echo "FIRST_JOB=${FIRST_JOB:-}" >> $GITHUB_ENV
           if [ -z "${FIRST_JOB:-}" ]; then
-            echo "WARNING: No YAMLs generated"
+            echo "WARNING: No YAMLs generated by lava-test-plans in ${JOBS_SUBDIR}"
+          else
+            echo "First generated job: ${FIRST_JOB}"
           fi
 
+          # Artifact name for upload
           echo "ARTIFACT_NAME=${{ inputs.prefix }}-${MACHINE}-${DISTRO_NAME}${KERNEL_SUFFIX}" >> $GITHUB_ENV
 
       - name: "List files (lava-test-plans output)"
@@ -251,9 +273,8 @@ jobs:
           name: ${{ env.ARTIFACT_NAME }}
           path: ${{ env.JOBS_OUT_PATH }}/**
 
-      # --- Submit ONLY the first generated job ---
+      # --- Submit only the FIRST generated job ---
       - name: Submit FIRST generated job via lava-action
-        id: submit_job   # REQUIRED FIX
         if: ${{ env.FIRST_JOB != '' }}
         uses: foundriesio/lava-action@v9
         with:
@@ -264,70 +285,6 @@ jobs:
           fail_action_on_failure: false
           save_result_as_artifact: true
           save_job_details: true
-
-      # ===================== MARKER ARTIFACTS FOR SUMMARY (additions) =====================
-      # 1) Preferred: create and upload marker using job_id output (if provided by lava-action)
-      - name: Create LAVA marker from action output
-        if: ${{ steps.submit_job.outputs.job_id != '' }}
-        shell: bash
-        run: |
-          set -euo pipefail
-          mkdir -p summary_markers
-          touch "summary_markers/test-job-${{ steps.submit_job.outputs.job_id }}"
-          echo "Created marker summary_markers/test-job-${{ steps.submit_job.outputs.job_id }}"
-
-      - name: Upload LAVA marker from action output
-        if: ${{ steps.submit_job.outputs.job_id != '' }}
-        uses: actions/upload-artifact@v6
-        with:
-          name: test-job-${{ steps.submit_job.outputs.job_id }}
-          path: summary_markers/test-job-${{ steps.submit_job.outputs.job_id }}
-
-      # 2) Fallback: parse job id from saved job details JSON (save_job_details: true)
-      - name: Create LAVA marker from saved job details (fallback)
-        if: ${{ steps.submit_job.outputs.job_id == '' || steps.submit_job.outputs.job_id == null }}
-        id: create_marker_fallback
-        shell: bash
-        run: |
-          set -euo pipefail
-          mkdir -p summary_markers
-
-          # Try to find any JSON likely produced by lava-action with job details
-          # Common patterns vary; search workspace for JSON with an "id" field.
-          JOB_JSON="$(grep -Rl --include='*.json' -m1 '\"id\"' . || true)"
-          if [ -z "${JOB_JSON:-}" ]; then
-            echo "No job-details JSON found; skipping marker fallback."
-            echo "job_id=" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-
-          # Prefer jq if available; otherwise use grep/sed as a last resort
-          if command -v jq >/dev/null 2>&1; then
-            JOB_ID="$(jq -r 'select(.id != null) | .id' "$JOB_JSON" 2>/dev/null || true)"
-            if [ -z "${JOB_ID:-}" ] || [ "${JOB_ID:-null}" = "null" ]; then
-              # Some schemas might nest id under .job.id or expose .job_id
-              JOB_ID="$(jq -r '.job.id // .job_id // empty' "$JOB_JSON" 2>/dev/null || true)"
-            fi
-          else
-            JOB_ID="$(sed -n 's/.*"id"[[:space:]]*:[[:space:]]*\([0-9]\+\).*/\1/p' "$JOB_JSON" | head -n1 || true)"
-          fi
-
-          if [ -n "${JOB_ID:-}" ]; then
-            touch "summary_markers/test-job-${JOB_ID}"
-            echo "Created marker summary_markers/test-job-${JOB_ID} (from ${JOB_JSON})"
-            echo "job_id=${JOB_ID}" >> "$GITHUB_OUTPUT"
-          else
-            echo "Could not extract job id from ${JOB_JSON}; skipping marker fallback."
-            echo "job_id=" >> "$GITHUB_OUTPUT"
-          fi
-
-      - name: Upload LAVA marker from fallback
-        if: ${{ steps.create_marker_fallback.outputs.job_id != '' }}
-        uses: actions/upload-artifact@v6
-        with:
-          name: test-job-${{ steps.create_marker_fallback.outputs.job_id }}
-          path: summary_markers/test-job-${{ steps.create_marker_fallback.outputs.job_id }}
-      # =================== END MARKER ARTIFACTS FOR SUMMARY (additions) ===================
 
       - name: Update Summary
         if: success() || failure()
@@ -364,15 +321,16 @@ jobs:
         id: generate-summary
         uses: AudioReach/audioreach-workflows/.github/actions/test-job-summary@upstream
         with:
-            build_id: ${{ github.run_id }}
-            gh_token: ${{ secrets.GITHUB_TOKEN }}
-            summary_file_name: test_job_summary
+          build_id: ${{ github.run_id }}
+          gh_token: ${{ secrets.GITHUB_TOKEN }}
+          summary_file_name: test_job_summary
       
+      # Download ALL matching summary artifacts from parallel jobs and put into one folder.
       - name: Download Summaries
         uses: actions/download-artifact@v6
         with:
-          pattern: test_job_summary*
-          merge-multiple: true
+          pattern: test_job_summary*          # match all parallel summaries (e.g., test_job_summary, test_job_summary_1, ...)
+          merge-multiple: true                # place all matched artifact contents into a single folder
           path: summaries
 
       - name: Publish Test Job Details
