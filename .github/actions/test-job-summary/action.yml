@@ -24,12 +24,25 @@ runs:
   using: "composite"
 
   steps:
-    - name: Download Artifacts
+
+    # ----------------------------------------------------------------------
+    # UPDATED: This step now uses repository + run-id + github-token 
+    # so it downloads artifacts from the correct workflow run.
+    # ----------------------------------------------------------------------
+    - name: Download required artifacts only (skip dockerbuild)
       uses: actions/download-artifact@v6
+      continue-on-error: true
       with:
-        github-token: ${{ inputs.gh_token }}
-        run-id: ${{ inputs.build_id }}
+        pattern: |
+          test-job*
+          test-results-*
+          presigned_url_*.txt
+        merge-multiple: true
         path: artifacts
+        repository: ${{ github.repository }}
+        run-id: ${{ inputs.build_id }}
+        github-token: ${{ inputs.gh_token }}
+    # ----------------------------------------------------------------------
 
     - name: "List files"
       shell: bash
@@ -45,8 +58,6 @@ runs:
         shopt -s nullglob
 
         # With merge-multiple: true, artifacts are FLAT files in ./artifacts/
-        # Examples seen: artifacts/test-results-142287  (no extension)
-        # Collect both families of files (with or without .json)
         testjobs=( \
           artifacts/${{ inputs.prefix }} \
           artifacts/test-results-* \
@@ -54,7 +65,7 @@ runs:
           artifacts/test-results-*.json \
         )
 
-        # Filter out non-existent patterns (nullglob handles this).
+        # No artifacts found
         if [ ${#testjobs[@]} -eq 0 ]; then
           {
             echo "### LAVA Test Summary"
@@ -67,7 +78,6 @@ runs:
           exit 0
         fi
 
-        # Helper: derive JOB_ID from **file name** (supports with/without .json)
         job_id_from_path() {
           local p="$1"
           local b
@@ -81,7 +91,6 @@ runs:
           esac
         }
 
-        # Build INPUT by querying LAVA API for each job id
         INPUT=$(
           for TESTJOB in "${testjobs[@]}"; do
             JOB_ID="$(job_id_from_path "$TESTJOB")"
@@ -127,7 +136,6 @@ runs:
           done | jq -s -c 'reduce .[] as $i ({}; .[$i.key] = ((.[$i.key] // {}) + $i.value))'
         )
 
-        # If INPUT is empty JSON or null, create a helpful message and exit
         if [ -z "${INPUT}" ] || [ "${INPUT}" = "null" ] || [ "${INPUT}" = "{}" ]; then
           {
             echo "### LAVA Test Summary"
@@ -140,32 +148,28 @@ runs:
         DEVICES=$(echo "$INPUT" | jq -r 'keys[]' | sort)
         RESULTS=$(echo "$INPUT" | jq -r '.[] | keys[]?' | sort -u)
 
-        # Header
         {
           printf "| %s |" "Test"
-          for D in $DEVICES; do
-            printf " %s |" "$D"
-          done
+          for D in $DEVICES; do printf " %s |" "$D"; done
           echo
 
           printf "| ---- |"
-          for _ in $DEVICES; do
-            printf " ---- |"
-          done
+          for _ in $DEVICES; do printf " ---- |"; done
           echo
 
           for R in $RESULTS; do
             printf "| %s |" "$R"
             for D in $DEVICES; do
               VALUE=$(echo "$INPUT" | jq -r --arg d "$D" --arg r "$R" '.[$d][$r].result // ""')
-              URL=$(echo "$INPUT"  | jq -r --arg d "$D" --arg r "$R" '.[$d][$r].url // ""')
+              URL=$(echo "$INPUT"   | jq -r --arg d "$D" --arg r "$R" '.[$d][$r].url // ""')
+
               CHECKMARK=":white_check_mark:"
-              if [ "${VALUE}" = "fail" ]; then CHECKMARK=":x:"; fi
-              if [ "${VALUE}" = "skip" ]; then CHECKMARK=":warning:"; fi
-              if [ -z "${VALUE}" ]; then CHECKMARK=":no_entry_sign:"; fi
+              if [ "$VALUE" = "fail" ]; then CHECKMARK=":x:"; fi
+              if [ "$VALUE" = "skip" ]; then CHECKMARK=":warning:"; fi
+              if [ -z "$VALUE" ]; then CHECKMARK=":no_entry_sign:"; fi
 
               if [ -n "$URL" ]; then
-                printf " %s [%s](%s) |" "$CHECKMARK" "$VALUE" "$URL"
+                printf " %s %s |" "$CHECKMARK" "$VALUE" "$URL"
               else
                 printf " %s %s |" "$CHECKMARK" "$VALUE"
               fi
@@ -180,18 +184,21 @@ runs:
           echo "| ---- | ---- | ---- | ---- |"
         } >> "${{ inputs.summary_file_name }}"
 
-        # Append job list
         for TESTJOB in "${testjobs[@]}"; do
           JOB_ID="$(job_id_from_path "$TESTJOB")"
           [ -n "$JOB_ID" ] || continue
+
           JOB_URL="https://lava.infra.foundries.io/results/${JOB_ID}"
           JOB_DETAILS=$(curl -s "https://lava.infra.foundries.io/api/v0.2/jobs/${JOB_ID}/")
+
           JOB_HEALTH=$(echo "$JOB_DETAILS" | jq -r ".health")
           JOB_STATE=$(echo "$JOB_DETAILS" | jq -r ".state")
           JOB_DEVICE_TYPE=$(echo "$JOB_DETAILS" | jq -r ".requested_device_type")
-          echo "| [${JOB_ID}](${JOB_URL}) | ${JOB_DEVICE_TYPE} | ${JOB_STATE} | ${JOB_HEALTH} |" >> "${{ inputs.summary_file_name }}"
+
+          echo "| [${JOB_ID}](${JOB_URL}) | ${JOB_DEVICE_TYPE} | ${JOB_STATE} | ${JOB_HEALTH} |" \
+            >> "${{ inputs.summary_file_name }}"
         done
-        
+
     - name: Upload summary
       id: upload-summary
       uses: actions/upload-artifact@v6
