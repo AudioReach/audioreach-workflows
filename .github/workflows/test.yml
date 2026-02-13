@@ -204,6 +204,8 @@ jobs:
           fail_action_on_failure: false
           save_result_as_artifact: true
           save_job_details: true
+          result_file_name: "${{ matrix.build_matrix.image_name }}"
+
 
       - name: Update Summary
         if: success() || failure()
