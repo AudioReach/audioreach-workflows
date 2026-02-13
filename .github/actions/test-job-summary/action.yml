@@ -22,16 +22,12 @@ runs:
 
   steps:
       
-      - name: Download required artifacts only (skip dockerbuild)
+      - name: Download Artifacts
         uses: actions/download-artifact@v6
-        continue-on-error: true
         with:
-          pattern: |
-            test-job*
-            test-results-*
-            presigned_url_*.txt
-            merge-multiple: false
-            path: artifacts
+          github-token: ${{ inputs.gh_token }}
+          run-id: ${{ inputs.build_id }}
+          path: artifacts
 
       - name: "List files"
         shell: bash
@@ -137,4 +133,5 @@ runs:
         uses: actions/upload-artifact@v6
         with:
           path: ${{inputs.summary_file_name}}
+
           name: ${{inputs.summary_file_name}}
