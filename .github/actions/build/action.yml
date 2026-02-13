@@ -7,12 +7,22 @@ inputs:
     required: true
     description: Docker image for build
 
+  build_matrix:            # <-- added
+    required: true
+    type: string
+    description: JSON string for the build matrix
+
+
 runs:
   using: 'composite'
   steps:
     - name: Build Project
       id: build
       shell: bash
+
+      env:
+        IMAGE_NAME: ${{ env.IMAGE_NAME }}
+
       run: |
         # Load the build arguments
         set +x
@@ -43,13 +53,13 @@ runs:
       shell: bash
       run: |
         # Create a tarball of the build directory
-        tar -czf build.tar -C ${{ github.workspace }}/build .
-        echo "Build tar created at ${{ github.workspace }}/build.tar"
+        tar -czf build_${{ env.IMAGE_NAME }}.tar -C ${{ github.workspace }}/build .
+        echo "Build tar created at ${{ github.workspace }}/build_${{ env.IMAGE_NAME }}.tar"
 
     - name: Upload build.tar
       id: upload_build_tar
       uses: actions/upload-artifact@v4
       with:
-        name: build.tar
-        path: ${{ github.workspace }}/build.tar
+        name: build_${{ env.IMAGE_NAME }}.tar
+        path: ${{ github.workspace }}/build_${{ env.IMAGE_NAME }}.tar
         retention-days: 1
