@@ -57,7 +57,7 @@ jobs:
     steps:
       - name: Build docker Image
         id: get-docker-image
-        uses: AudioReach/audioreach-workflows/.github/actions/build_docker_image@master
+        uses: AudioReach/audioreach-workflows/.github/actions/build_docker_image@PR
 
       - name: Sync Codebase
         id: sync
@@ -89,7 +89,7 @@ jobs:
 
       - name: Pull meta-audioreach pre compiled image
         id: pull_meta_audioreach
-        uses: AudioReach/audioreach-workflows/.github/actions/aws-s3-exchanger@master
+        uses: AudioReach/audioreach-workflows/.github/actions/aws-s3-exchanger@PR
         with:
           s3_bucket: qli-prd-audior-gh-artifacts
           mode: download
@@ -156,7 +156,7 @@ jobs:
 
       - name: Upload tar image
         id: upload_tar_image
-        uses: AudioReach/audioreach-workflows/.github/actions/aws-s3-exchanger@master
+        uses: AudioReach/audioreach-workflows/.github/actions/aws-s3-exchanger@PR
         with:
           s3_bucket: qli-prd-audior-gh-artifacts
           local_file: ${{ github.workspace }}/qcom-multimedia-image-${{ env.IMAGE_NAME }}.rootfs.qcomflash.tar.gz
