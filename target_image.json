@@ -1,0 +1,10 @@
+{
+  "rb3gen2-core-kit-6.18": {
+    "Test_file": "ci/lava/rb3gen2-core-kit-6.18/boot.yaml",
+    "Image_name": "rb3gen2-core-kit-6.18"
+  },
+  "rb3gen2-core-kit": {
+    "Test_file": "ci/lava/rb3gen2-core-kit/boot.yaml",
+    "Image_name": "rb3gen2-core-kit"
+  }
+}

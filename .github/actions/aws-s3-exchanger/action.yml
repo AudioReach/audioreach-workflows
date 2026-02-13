@@ -41,16 +41,20 @@ runs:
           upload)
             echo "::group::$(printf '__________ %-100s' 'Process' | tr ' ' _)"
             echo "Uploading file to S3 bucket..."
-            aws s3 cp "${{ inputs.local_file }}" s3://${{ inputs.s3_bucket }}/${{ inputs.location }}${{ env.UPLOAD_LOCATION }}
-            echo "Uploaded ${{ inputs.local_file }} to s3://${{ inputs.s3_bucket }}/${{ inputs.location }}${{ env.UPLOAD_LOCATION }}"
+            aws s3 cp "${{ inputs.local_file }}" s3://${{ inputs.s3_bucket }}/${{ inputs.location }}/${{ env.UPLOAD_LOCATION }}${{ env.IMAGE_NAME }}/
+            echo "Uploaded ${{ inputs.local_file }} to s3://${{ inputs.s3_bucket }}/${{ inputs.location }}/${{ env.UPLOAD_LOCATION }}${{ env.IMAGE_NAME }}/"
             echo "::endgroup::"
             echo "Creating Pre-signed URL for ${{ inputs.local_file }}..."
             filename="$(basename "${{ inputs.local_file }}")"
             echo "Filename: $filename"
-            presigned_url="$(aws s3 presign s3://${{ inputs.s3_bucket }}/${{ inputs.location }}${{ env.UPLOAD_LOCATION }}$filename --expires-in 3600)"
+            presigned_url="$(aws s3 presign s3://${{ inputs.s3_bucket }}/${{ inputs.location }}/${{ env.UPLOAD_LOCATION }}${{ env.IMAGE_NAME }}/$filename --expires-in 3600)"
             echo "Pre-signed URL: $presigned_url"
-            # write the url in a text file
-            echo "${presigned_url}" > ${{ github.workspace }}/presigned_url.txt
+
+            # Make URL available as a step output (fixed key)
+            echo "presigned_url=${presigned_url}" >> "$GITHUB_OUTPUT"
+
+            # Also write the URL into a uniquely named file for artifact download
+            echo "${presigned_url}" > "${{ github.workspace }}/presigned_url_${{ env.IMAGE_NAME }}.txt"
             ;;
           download)
             #Download The required file from s3
@@ -72,6 +76,6 @@ runs:
       if: ${{ inputs.mode == 'upload' }}
       uses: actions/upload-artifact@v4
       with:
-        name: presigned_url.txt
-        path: ${{ github.workspace }}/presigned_url.txt
+        name: presigned_url_${{ env.IMAGE_NAME }}.txt
+        path: ${{ github.workspace }}/presigned_url_${{ env.IMAGE_NAME }}.txt
         retention-days: 1
