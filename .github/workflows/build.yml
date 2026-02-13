@@ -136,6 +136,6 @@ jobs:
         run: |
           echo "Cleaning Up Workspace"
           rm -rf install/ ${{ env.SDK_NAME }}
-          rm -rf build/ ${{ github.workspace }}/build_$IMAGE_NAME.tar
+          rm -rf build/ ${{ github.workspace }}/build_${{ env.IMAGE_NAME }}.tar
           echo "Workspace cleaned up successfully"
 
