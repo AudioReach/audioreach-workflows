@@ -256,6 +256,7 @@ jobs:
         run: |
           echo "${GITHUB_WORKSPACE}"
           ls -R "${GITHUB_WORKSPACE}"
+          echo "list files completed"
 
       - name: 'Upload test jobs (lava-test-plans artifact)'
         uses: actions/upload-artifact@v6
@@ -278,7 +279,12 @@ jobs:
 
       - name: Update Summary
         if: success() || failure()
+        shell: bash
         run: |
+          echo "${GITHUB_WORKSPACE}"
+          ls -R "${GITHUB_WORKSPACE}"
+          echo "list files called "
+          tree "${{ env.JOBS_OUT_PATH }}"
           echo "## Test Job Summary" >> $GITHUB_STEP_SUMMARY
           if [ "${{ steps.submit_job.outcome || 'failure' }}" == "success" ]; then
             echo ":heavy_check_mark: Template-based job completed successfully." >> $GITHUB_STEP_SUMMARY
