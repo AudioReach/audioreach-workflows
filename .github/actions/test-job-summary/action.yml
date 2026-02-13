@@ -24,16 +24,11 @@ runs:
   using: "composite"
 
   steps:
-    - name: Download required artifacts only (skip dockerbuild)
-      # This step downloads artifacts produced by parallel jobs
+    - name: Download Artifacts
       uses: actions/download-artifact@v6
-      continue-on-error: true
       with:
-        pattern: |
-          test-job*
-          test-results-*
-          presigned_url_*.txt
-        merge-multiple: true
+        github-token: ${{ inputs.gh_token }}
+        run-id: ${{ inputs.build_id }}
         path: artifacts
 
     - name: "List files"
