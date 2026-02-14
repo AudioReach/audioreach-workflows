@@ -28,6 +28,9 @@ runs:
           github-token: ${{ inputs.gh_token }}
           run-id: ${{ inputs.build_id }}
           path: artifacts
+          pattern: test-job*
+          merge-multiple: true
+
 
       - name: "List files"
         shell: bash
@@ -38,6 +41,9 @@ runs:
       - name: Publish Test Job Details
         shell: bash
         run: |
+          echo "${{ github.workspace }}"
+          ls -lrt "${{ github.workspace }}"
+          echo "fetching test jobs"
           INPUT=$(for TESTJOB in $(find ${{ github.workspace }} -name "${{ inputs.prefix }}.json")
           do
               JOB_ID=$(cat "${TESTJOB}" | jq ".id")
@@ -135,3 +141,4 @@ runs:
           path: ${{inputs.summary_file_name}}
 
           name: ${{inputs.summary_file_name}}
+
