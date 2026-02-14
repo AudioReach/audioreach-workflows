@@ -92,7 +92,7 @@ jobs:
 
       - name: Submit LAVA test job
         id: lava_submit
-        uses: AudioReach/audioreach-workflows/.github/actions/test-job-summary@publish
+        uses: AudioReach/audioreach-workflows/.github/actions/lava-test-plans@publish
         with:
           image_name: ${{ matrix.build_matrix.image_name }}
           machine_name: ${{ matrix.build_matrix.machine_name }}
