@@ -92,7 +92,7 @@ jobs:
 
       - name: Submit LAVA test job
         id: lava_submit
-        uses: ./.github/actions/lava-submit
+        uses: ./.github/actions/lava-test-plans
         with:
           image_name: ${{ matrix.build_matrix.image_name }}
           machine_name: ${{ matrix.build_matrix.machine_name }}
