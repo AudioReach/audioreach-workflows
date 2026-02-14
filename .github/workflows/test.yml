@@ -90,6 +90,7 @@ jobs:
         run: |
           set -euo pipefail
           cd lava-test-plans && pip install .
+          pip install requests urllib3
           lava-test-plans --version
           cd "${GITHUB_WORKSPACE}"
 
