@@ -253,7 +253,7 @@ runs:
           echo "" >> ${{inputs.summary_file_name}}
           echo "| Job ID | Device | State | Health |" >> ${{inputs.summary_file_name}}
           echo "| ---- | ---- | ---- | ---- |" >> ${{inputs.summary_file_name}}
-          for TESTJOB in $(find ${{ github.workspace }} -name "${{ inputs.prefix }}.json")
+          for TESTJOB in $(find ${{ github.workspace }} -name "${{ inputs.prefix }}*.json")
           do
               JOB_ID=$(cat "${TESTJOB}" | jq ".id")
               JOB_URL="https://lava.infra.foundries.io/results/$JOB_ID"
@@ -270,6 +270,7 @@ runs:
           path: ${{inputs.summary_file_name}}
 
           name: ${{inputs.summary_file_name}}
+
 
 
 
