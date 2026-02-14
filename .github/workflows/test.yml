@@ -1,4 +1,4 @@
-name: _test
+name: LAVA Test Workflow
 description: Trigger LAVA tests on the build
 
 on:
@@ -9,7 +9,7 @@ on:
         required: true
         type: string
 
-      # === Optional knobs for lava-test-plans (can also be provided per-matrix item) ===
+      # === Optional knobs for lava-test-plans ===
       distro_name:
         description: Default distro for lava-test-plans if not provided in matrix
         required: false
@@ -30,12 +30,29 @@ on:
         required: false
         type: string
         default: testjobs
+      
+      # === LAVA server configuration ===
+      lava_url:
+        description: LAVA server URL
+        required: false
+        type: string
+        default: lava.infra.foundries.io
+      wait_for_job:
+        description: Wait for LAVA job to complete
+        required: false
+        type: boolean
+        default: true
+      fail_on_test_failure:
+        description: Fail workflow if LAVA test fails
+        required: false
+        type: boolean
+        default: false
 
 jobs:
   submit_lava:
     runs-on:
       group: GHA-AudioReach-SelfHosted-RG
-      labels: [ self-hosted, self-hosted, audior-prd-u2204-x64-large-od-ephem ]
+      labels: [ self-hosted, audior-prd-u2204-x64-large-od-ephem ]
     strategy:
       fail-fast: false
       matrix:
@@ -66,167 +83,31 @@ jobs:
             console.log(url)
             core.setOutput('build_url', url)
 
-      - name: Print trigger
+      - name: Print trigger info
         run: |
           echo "Triggered by ${{ github.event_name }}"
-          echo "Build URL: --->"
-          echo "${{ steps.get_build_url.outputs.build_url }}"
+          echo "Build URL: ${{ steps.get_build_url.outputs.build_url }}"
+          echo "Image: ${{ matrix.build_matrix.image_name }}"
+          echo "Machine: ${{ matrix.build_matrix.machine_name }}"
 
-      # =========================== lava-test-plans integration START ===========================
-      - name: Checkout lava-test-plans
-        uses: actions/checkout@v5
+      - name: Submit LAVA test job
+        id: lava_submit
+        uses: ./.github/actions/lava-submit
         with:
-          repository: qualcomm-linux-stg/lava-test-plans
-          path: lava-test-plans
-          ref: master
-
-      - name: Setup Python
-        uses: actions/setup-python@v6
-        with:
-          python-version: "3.11"
-
-      - name: Run lava-test-plans (generate jobs)
-        shell: bash
-        run: |
-          set -euo pipefail
-          cd lava-test-plans && pip install .
-          pip install requests urllib3
-          lava-test-plans --version
-          cd "${GITHUB_WORKSPACE}"
-
-          OUT_PATH="${GITHUB_WORKSPACE}/out"
-          VARS_OUT_PATH="${OUT_PATH}/vars"
-          JOBS_OUT_PATH="${OUT_PATH}/jobs"
-          echo "JOBS_OUT_PATH=${JOBS_OUT_PATH}" >> $GITHUB_ENV
-          mkdir -p "${VARS_OUT_PATH}" "${JOBS_OUT_PATH}"
-
-          # === Plan roots as in the installed package ===
-          PROJECT="meta-qcom"
-          DISTRO_NAME="${{ inputs.distro_name }}"      # qcom-distro
-          #MACHINE="${DEVICE_TYPE:-${{ steps.listjobs.outputs.device_type }}}"
-
-          # Map testplan input to a plan directory (pre-merge-basic lives under 'pre-merge')
-          TESTPLAN_INPUT="${{ inputs.testplan }}"
-          case "$TESTPLAN_INPUT" in
-            boot)  TESTPLAN_DIR="boot" ;;
-            pre-merge|pre-merge-basic|pre-merge-bt) TESTPLAN_DIR="pre-merge" ;;
-            *)     TESTPLAN_DIR="$TESTPLAN_INPUT" ;;
-          esac
-
-          echo "Using lava-test-plans project: ${PROJECT}"
-          echo "Resolved: MACHINE=${{ matrix.build_matrix.machine_name }}, DISTRO_NAME=${DISTRO_NAME}, TESTPLAN_DIR=${TESTPLAN_DIR}"
-
-          TESTPLAN_DIR_ABS="lava-test-plans/lava_test_plans/testplans/${PROJECT}/${DISTRO_NAME}/${TESTPLAN_DIR}"
-          if [ ! -d "${TESTPLAN_DIR_ABS}" ]; then
-            echo "ERROR: Test plan directory not found: ${TESTPLAN_DIR_ABS}"
-            ls -al "lava-test-plans/lava_test_plans/testplans/${PROJECT}/${DISTRO_NAME}" || true
-            exit 1
-          fi
-
-          {
-            echo "PROJECT_NAME=${PROJECT}"
-            echo "PROJECT=projects/${PROJECT}/"
-            echo "LAVA_JOB_PRIORITY=50"
-            echo "OS_INFO=qcom-distro"
-            echo "BUILD_NUMBER=${{ github.run_id }}-${{ github.run_attempt }}"
-            echo "DOCKER_IMAGE_POSTPROCESS=ghcr.io/foundriesio/lava-lmp-sign:main"
-            echo "AUTH_HEADER_NAME=Authentication"
-            echo "AUTH_HEADER_TOKEN=Q_GITHUB_TOKEN"
-            echo "TEST_DEFINITIONS_REPOSITORY=https://github.com/qualcomm-linux/qcom-linux-testkit/"
-            echo "FLASHER_DEVICE_TYPE=qcs"
-          } >> "${VARS_OUT_PATH}/gh-variables.ini"
-
-          IMAGE_TYPE="core-image-base"
-          if [ "${DISTRO_NAME}" = "qcom-distro" ]; then
-            IMAGE_TYPE="qcom-multimedia-image"
-            echo "AUTO_LOGIN_PASSWORD_PROMPT=Password" >> "${VARS_OUT_PATH}/gh-variables.ini"
-            echo "AUTO_LOGIN_PASSWORD=oelinux123"     >> "${VARS_OUT_PATH}/gh-variables.ini"
-          fi
-          echo "IMAGE_FILE_NAME=${IMAGE_TYPE}-${{ matrix.build_matrix.image_name }}.rootfs.qcomflash.tar.gz" >> "${VARS_OUT_PATH}/gh-variables.ini"
-
-          # Use the presigned URL as-is (no trailing slash) to avoid breaking query params.
-          BUILD_URL="${{ steps.get_build_url.outputs.build_url }}"
-          if [ -z "${BUILD_URL}" ]; then
-            echo "BUILD_URL missing"
-            exit 1
-          fi
-          echo "BUILD_DOWNLOAD_URL=${BUILD_URL}" >> "${VARS_OUT_PATH}/gh-variables.ini"
-          echo "ROOTFS_URL=${BUILD_URL}" >> "${VARS_OUT_PATH}/gh-variables.ini"
-          echo "DEVICE_TYPE=${{ matrix.build_matrix.image_name }}" >> "${VARS_OUT_PATH}/gh-variables.ini"
-
-          echo "==== gh-variables.ini ===="
-          cat "${VARS_OUT_PATH}/gh-variables.ini"
-
-          lava-test-plans \
-            --dry-run \
-            --variables "${VARS_OUT_PATH}/gh-variables.ini" \
-            --test-plan "${PROJECT}/${DISTRO_NAME}/${TESTPLAN_DIR}" \
-            --device-type "projects/${PROJECT}/devices/${{ matrix.build_matrix.machine_name }}" \
-            --dry-run-path "${JOBS_OUT_PATH}/${{ matrix.build_matrix.image_name }}-${DISTRO_NAME}-${TESTPLAN_DIR}" || true
-
-          # Expose the subdir where jobs were generated (local + export)
-          JOBS_SUBDIR="${JOBS_OUT_PATH}/${{ matrix.build_matrix.image_name }}-${DISTRO_NAME}-${TESTPLAN_DIR}"
-          echo "JOBS_SUBDIR=${JOBS_SUBDIR}" >> $GITHUB_ENV
-
-          # Optionally verify and surface the first YAML (used for single submission)
-          FIRST_JOB=$(find "${JOBS_SUBDIR}" -type f -name '*.yaml' | sort | head -n 1 || true)
-          echo "FIRST_JOB=${FIRST_JOB:-}" >> $GITHUB_ENV
-          if [ -z "${FIRST_JOB:-}" ]; then
-            echo "WARNING: No YAMLs generated by lava-test-plans in ${JOBS_SUBDIR}"
-          else
-            echo "First generated job: ${FIRST_JOB}"
-          fi
-
-          # Artifact name for upload
-          echo "ARTIFACT_NAME=${{ inputs.prefix }}-${{ matrix.build_matrix.image_name }}-${DISTRO_NAME}" >> $GITHUB_ENV
-
-      - name: "List files (lava-test-plans output)"
-        shell: bash
-        run: |
-          echo "${GITHUB_WORKSPACE}"
-          ls -R "${GITHUB_WORKSPACE}"
-          echo "list files completed"
-
-      - name: 'Upload test jobs (lava-test-plans artifact)'
-        uses: actions/upload-artifact@v6
-        with:
-          name: ${{ env.ARTIFACT_NAME }}
-          path: ${{ env.JOBS_OUT_PATH }}/**
-
-      # --- Submit only the FIRST generated job ---
-      - name: Submit FIRST generated job via lava-action
-        if: ${{ env.FIRST_JOB != '' }}
-        uses: foundriesio/lava-action@v9
-        with:
+          image_name: ${{ matrix.build_matrix.image_name }}
+          machine_name: ${{ matrix.build_matrix.machine_name }}
+          build_url: ${{ steps.get_build_url.outputs.build_url }}
+          distro_name: ${{ inputs.distro_name }}
+          kernel: ${{ inputs.kernel }}
+          testplan: ${{ inputs.testplan }}
+          prefix: ${{ inputs.prefix }}
           lava_token: ${{ secrets.LAVATOKEN }}
-          lava_url: 'lava.infra.foundries.io'
-          job_definition: ${{ env.FIRST_JOB }}
-          wait_for_job: true
-          fail_action_on_failure: false
-          save_result_as_artifact: true
-          save_job_details: true
-          result_file_name: "${{ matrix.build_matrix.image_name }}"
+          lava_url: ${{ inputs.lava_url }}
+          wait_for_job: ${{ inputs.wait_for_job }}
+          fail_action_on_failure: ${{ inputs.fail_on_test_failure }}
+          run_id: ${{ github.run_id }}
+          run_attempt: ${{ github.run_attempt }}
 
-
-      - name: Update Summary
-        if: success() || failure()
-        shell: bash
-        run: |
-          echo "${GITHUB_WORKSPACE}"
-          ls -R "${GITHUB_WORKSPACE}"
-          echo "list files called "
-          # tree "${{ env.JOBS_OUT_PATH }}"
-          echo "## Test Job Summary" >> $GITHUB_STEP_SUMMARY
-          if [ "${{ steps.submit_job.outcome || 'failure' }}" == "success" ]; then
-            echo ":heavy_check_mark: Template-based job completed successfully." >> $GITHUB_STEP_SUMMARY
-          else
-            echo ":warning: Template-based job may have failed or was skipped." >> $GITHUB_STEP_SUMMARY
-          fi
-          if [ -n "${FIRST_JOB:-}" ]; then
-            echo "" >> $GITHUB_STEP_SUMMARY
-            echo "### lava-test-plans" >> $GITHUB_STEP_SUMMARY
-            echo "Submitted job: \`${FIRST_JOB}\`" >> $GITHUB_STEP_SUMMARY
-          fi
   publish-test-summary:
     name: "Publish Tests Summary"
     needs: [submit_lava]
@@ -255,7 +136,7 @@ jobs:
       - name: Download Summaries
         uses: actions/download-artifact@v6
         with:
-          pattern: test_job_summary*          # match all parallel summaries (e.g., test_job_summary, test_job_summary_1, ...)
+          pattern: test_job_summary*          # match all parallel summaries
           merge-multiple: true                # place all matched artifact contents into a single folder
           path: summaries
 
