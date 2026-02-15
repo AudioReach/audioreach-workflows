@@ -57,11 +57,11 @@ jobs:
     steps:
       - name: Build docker Image
         id: get-docker-image
-        uses: AudioReach/audioreach-workflows/.github/actions/build_docker_image@master
+        uses: AudioReach/audioreach-workflows/.github/actions/build_docker_image@publish
 
       - name: Sync Codebase
         id: sync
-        uses: AudioReach/audioreach-workflows/.github/actions/sync@master
+        uses: AudioReach/audioreach-workflows/.github/actions/sync@publish
         with:
           event_name: ${{ inputs.event_name }}
           pr_ref: ${{ inputs.pr_ref }}
@@ -89,7 +89,7 @@ jobs:
 
       - name: Pull meta-audioreach pre compiled image
         id: pull_meta_audioreach
-        uses: AudioReach/audioreach-workflows/.github/actions/aws-s3-exchanger@master
+        uses: AudioReach/audioreach-workflows/.github/actions/aws-s3-exchanger@publish
         with:
           s3_bucket: qli-prd-audior-gh-artifacts
           mode: download
