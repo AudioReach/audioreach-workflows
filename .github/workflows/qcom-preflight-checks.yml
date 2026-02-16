@@ -40,7 +40,7 @@ permissions:
 
 jobs:
   qcom-preflight-checks:
-    uses: qualcomm/qcom-reusable-workflows/.github/workflows/reusable-qcom-preflight-checks-orchestrator.yml@main
+    uses: qualcomm-linux-stg/qcom-reusable-workflows/.github/workflows/reusable-qcom-preflight-checks-orchestrator.yml@main
     with:
       # ✅ Preflight Checkers
       enable-semgrep-scan: ${{ inputs.enable-semgrep-scan }}
