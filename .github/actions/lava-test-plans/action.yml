@@ -139,7 +139,7 @@ runs:
           echo "AUTH_HEADER_TOKEN=Q_GITHUB_TOKEN"
           echo "TEST_DEFINITIONS_REPOSITORY=https://github.com/qualcomm-linux/qcom-linux-testkit/"
           echo "FLASHER_DEVICE_TYPE=qcs"
-        } >> "${VARS_OUT_PATH}/gh-variables.ini"
+          echo "AUDIO_CLIPS_BASE_DIR=/home/AudioClips/" } >> "${VARS_OUT_PATH}/gh-variables.ini"
 
         IMAGE_TYPE="core-image-base"
         if [ "${DISTRO_NAME}" = "qcom-distro" ]; then
