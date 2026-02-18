@@ -80,7 +80,7 @@ jobs:
 
       - name: Download presigned URL
         id: download_url
-        uses: actions/download-artifact@v6
+        uses: actions/download-artifact@v7
         with:
           name: presigned_url_${{ matrix.build_matrix.image_name }}.txt
           path: ${{ github.workspace }}
