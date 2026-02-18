@@ -62,7 +62,7 @@ jobs:
     steps:
     
       - name: Skip if testing disabled
-        if: ${{ !matrix.build_matrix.testing_enabled }}
+        if: ${{ matrix.build_matrix.testing_enabled != true || matrix.build_matrix.testing_enabled != 'true' }}
         run: |
           echo "Testing disabled for target '${{ matrix.build_matrix.image_name }}'. Skipping."
           exit 0
