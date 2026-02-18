@@ -142,6 +142,8 @@ jobs:
               echo "Image unmounted successfully"
             '
           ls -l "$ROOTFS_DIR/rootfs.img"
+          echo '${{ matrix.build_matrix }}'
+          echo '${{ matrix.build_matrix.testing_enabled }}'
 
       - name: Create tar image for qcomflash directory
         id: create_tar_image
