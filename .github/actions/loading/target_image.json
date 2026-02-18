@@ -3,12 +3,14 @@
     "Test_file": "ci/lava/rb3gen2-core-kit-6.18/boot.yaml",
     "SDK_name" : "sdk-rb3gen2-core-kit-6.18.sh",
     "Image_name": "rb3gen2-core-kit-6.18",
-    "Machine_name": "rb3gen2-core-kit"
+    "Machine_name": "rb3gen2-core-kit",
+    "Testing_enabled": true
   },
   "rb3gen2-core-kit": {
     "Test_file": "ci/lava/rb3gen2-core-kit/boot.yaml",
     "SDK_name": "sdk-rb3gen2-core-kit.sh",
     "Image_name": "rb3gen2-core-kit",
-    "Machine_name": "rb3gen2-core-kit"
+    "Machine_name": "rb3gen2-core-kit",
+    "Testing_enabled": true
   }
 }

@@ -59,6 +59,19 @@ jobs:
         build_matrix: ${{ fromJSON(inputs.build_matrix) }}
 
     steps:
+
+      # If your matrix sometimes uses a string "true", replace the if: with:
+      # if: ${{ !fromJSON('["true", true]').includes(matrix.build_matrix.testing_enabled) }}
+      - name: Skip if testing disabled
+        if: ${{ matrix.build_matrix.testing_enabled != true }}
+        env:
+          TESTING_ENABLED: ${{ matrix.build_matrix.testing_enabled }}
+          IMAGE_NAME: ${{ matrix.build_matrix.image_name }}
+        run: |
+          echo "testing_enabled=\"$TESTING_ENABLED\""
+          echo "Testing disabled for target \"$IMAGE_NAME\". Skipping."
+          exit 0
+
       - name: Clone repository
         uses: actions/checkout@v5
         with:
@@ -84,11 +97,16 @@ jobs:
             core.setOutput('build_url', url)
 
       - name: Print trigger info
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          BUILD_URL: ${{ steps.get_build_url.outputs.build_url }}
+          IMAGE_NAME: ${{ matrix.build_matrix.image_name }}
+          MACHINE_NAME: ${{ matrix.build_matrix.machine_name }}
         run: |
-          echo "Triggered by ${{ github.event_name }}"
-          echo "Build URL: ${{ steps.get_build_url.outputs.build_url }}"
-          echo "Image: ${{ matrix.build_matrix.image_name }}"
-          echo "Machine: ${{ matrix.build_matrix.machine_name }}"
+          echo "Triggered by \"$EVENT_NAME\""
+          echo "Build URL: \"$BUILD_URL\""
+          echo "Image: \"$IMAGE_NAME\""
+          echo "Machine: \"$MACHINE_NAME\""
 
       - name: Submit LAVA test job
         id: lava_submit
