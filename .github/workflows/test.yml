@@ -57,6 +57,8 @@ jobs:
       fail-fast: false
       matrix:
         build_matrix: ${{ fromJSON(inputs.build_matrix) }}
+        
+    if: ${{ matrix.build_matrix.testing_enabled == 'true' || matrix.build_matrix.testing_enabled == true }}
 
     steps:
       - name: Clone repository
