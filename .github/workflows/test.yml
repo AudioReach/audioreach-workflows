@@ -60,6 +60,7 @@ jobs:
 
     steps:
       - name: Clone repository
+        if: ${{ matrix.build_matrix.testing_enabled == 'true' || matrix.build_matrix.testing_enabled }}
         uses: actions/checkout@v5
         with:
           fetch-depth: 0
@@ -67,6 +68,7 @@ jobs:
 
       - name: Download presigned URL
         id: download_url
+        if: ${{ matrix.build_matrix.testing_enabled == 'true' || matrix.build_matrix.testing_enabled }}
         uses: actions/download-artifact@v6
         with:
           name: presigned_url_${{ matrix.build_matrix.image_name }}.txt
@@ -74,6 +76,7 @@ jobs:
 
       - name: Get build URL
         id: get_build_url
+        if: ${{ matrix.build_matrix.testing_enabled == 'true' || matrix.build_matrix.testing_enabled }}
         uses: actions/github-script@v8
         with:
           script: |
@@ -84,6 +87,7 @@ jobs:
             core.setOutput('build_url', url)
 
       - name: Print trigger info
+        if: ${{ matrix.build_matrix.testing_enabled == 'true' || matrix.build_matrix.testing_enabled }}
         run: |
           echo "Triggered by ${{ github.event_name }}"
           echo "Build URL: ${{ steps.get_build_url.outputs.build_url }}"
@@ -92,6 +96,7 @@ jobs:
 
       - name: Submit LAVA test job
         id: lava_submit
+        if: ${{ matrix.build_matrix.testing_enabled == 'true' || matrix.build_matrix.testing_enabled }}
         uses: AudioReach/audioreach-workflows/.github/actions/lava-test-plans@temp
         with:
           image_name: ${{ matrix.build_matrix.image_name }}
