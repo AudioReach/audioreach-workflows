@@ -76,7 +76,12 @@ runs:
                 sdk_name: cfg.SDK_name,
                 image_name: cfg.Image_name,
                 machine_name: cfg.Machine_name
-                test_enabled: cfg.Test_enabled
+                
+                test_enabled:
+                  typeof cfg?.Testing_enabled === 'string'
+                  ? cfg.Testing_enabled.toLowerCase() === 'true'
+                  : Boolean(cfg?.Testing_enabled)
+
               }));
               // Output a FLAT ARRAY to match strategy.matrix.build_matrix: fromJson(...)
               const out = JSON.stringify(include);
