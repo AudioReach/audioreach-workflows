@@ -1,4 +1,4 @@
-name: workflows Preflight Checks
+name: workflows Checks
 
 on:
   pull_request:
