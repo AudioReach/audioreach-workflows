@@ -169,6 +169,7 @@ runs:
           printf 'AUTH_HEADER_TOKEN=%s\n' "Q_GITHUB_TOKEN"
           printf 'TEST_DEFINITIONS_REPOSITORY=%s\n' "https://github.com/qualcomm-linux/qcom-linux-testkit/"
           printf 'FLASHER_DEVICE_TYPE=%s\n' "qcs"
+          printf 'AUDIO_CLIPS_BASE_DIR=%s\n' "/home/AudioClips/"
         } >> "${VARS_FILE}"
 
         IMAGE_TYPE="core-image-base"

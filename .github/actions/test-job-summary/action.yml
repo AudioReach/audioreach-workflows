@@ -270,13 +270,13 @@ runs:
             JOB_DETAILS="$(curl -fsSL --retry 3 --retry-delay 2 --max-time 30 "https://lava.infra.foundries.io/api/v0.2/jobs/${JOB_ID}/" || true)"
             if [ -z "${JOB_DETAILS}" ]; then
               # Print a row indicating fetch failure
-              printf '| %s | %s | %s | %s |\n' "${JOB_ID}" "${JOB_URL}" "?" "?" "fetch_error" >> "${SUMMARY_FILE}"
+              printf '| [%s](%s) | %s | %s | %s |\n' "${JOB_ID}" "${JOB_URL}" "?" "?" "fetch_error" >> "${SUMMARY_FILE}"
               continue
             fi
             JOB_HEALTH="$(printf '%s' "${JOB_DETAILS}" | jq -r '.health // "?"')"
             JOB_STATE="$(printf '%s' "${JOB_DETAILS}" | jq -r '.state // "?"')"
             JOB_DEVICE_TYPE="$(printf '%s' "${JOB_DETAILS}" | jq -r '.requested_device_type // "?"')"
-            printf '| %s | %s | %s | %s |\n' "${JOB_ID}" "${JOB_URL}" "${JOB_DEVICE_TYPE}" "${JOB_STATE}" "${JOB_HEALTH}" >> "${SUMMARY_FILE}"
+            printf '| [%s](%s) | %s | %s | %s |\n' "${JOB_ID}" "${JOB_URL}" "${JOB_DEVICE_TYPE}" "${JOB_STATE}" "${JOB_HEALTH}" >> "${SUMMARY_FILE}"
           done
 
     - name: Upload summary
