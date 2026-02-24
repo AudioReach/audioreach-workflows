@@ -44,9 +44,9 @@ on:
         default: true
       fail_on_test_failure:
         description: Fail workflow if LAVA test fails
-        required: false
+        required: true
         type: boolean
-        default: false
+        default: true
 
 jobs:
   submit_lava:
