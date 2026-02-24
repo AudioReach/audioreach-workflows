@@ -2,9 +2,9 @@ name: workflows Preflight Checks
 
 on:
   pull_request:
-    branches: [ master ]
+    branches: [ work ]
   push:
-    branches: [ master ]
+    branches: [ work ]
   workflow_dispatch:
 
 permissions:
@@ -13,5 +13,5 @@ permissions:
 
 jobs:
   qcom-preflight-checks:
-    uses: Audioreach/audioreach-workflows/.github/workflows/qcom-preflight-checks.yml@master
+    uses: Audioreach/audioreach-workflows/.github/workflows/qcom-preflight-checks.yml@work
     secrets: inherit
