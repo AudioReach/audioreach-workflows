@@ -256,9 +256,9 @@ runs:
         	print(f"\nSummary written to: {summary_file}")
         
         # Main execution
-        WORKSPACE = os.environ.get("WORKSPACE", "")
-        PREFIX = os.environ.get("PREFIX", "")
-        SUMMARY_FILE = os.environ.get("SUMMARY_FILE", "step-summary.txt")
+        workspace = os.environ.get("WORKSPACE", "")
+        prefix = os.environ.get("PREFIX", "")
+        summary_file = os.environ.get("SUMMARY_FILE", "step-summary.txt")
         
         print(f"Workspace: {workspace}")
         print(f"Looking for files matching: {prefix}*.json")
