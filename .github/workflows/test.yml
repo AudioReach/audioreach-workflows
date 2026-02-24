@@ -24,7 +24,7 @@ on:
         description: Test plan name to use in job generation (lava-test-plans)
         required: false
         type: string
-        default: pre-merge
+        default: post-merge
       prefix:
         description: Prefix for the compressed artifact with generated jobs
         required: false
