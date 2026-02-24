@@ -170,7 +170,6 @@ runs:
           printf 'TEST_DEFINITIONS_REPOSITORY=%s\n' "https://github.com/qualcomm-linux/qcom-linux-testkit/"
           printf 'FLASHER_DEVICE_TYPE=%s\n' "qcs"
           printf 'AUDIO_CLIPS_BASE_DIR=%s\n' "/home/AudioClips/"
-          printf 'AUDIO_CLIPS_URL=%s\n' "${AUDIO_CLIPS_URL}"
         } >> "${VARS_FILE}"
 
         IMAGE_TYPE="core-image-base"
