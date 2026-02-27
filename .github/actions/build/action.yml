@@ -25,7 +25,7 @@ runs:
         [ -f "./${{ env.CONFIG_SCRIPT }}" ] && export CONFIG_SCRIPT="${{ env.CONFIG_SCRIPT }}"
         [ -f "./${{ env.SYNC_SCRIPT }}" ] && source "./${{ env.SYNC_SCRIPT }}"
         [ -f "./${{ env.APPLY_PATCH_SCRIPT }}" ] && source "./${{ env.APPLY_PATCH_SCRIPT }}"
-        [ -f "./${{ env.PREBUILD_SCRIPT }}" ] && source ./${{ env.PREBUILD_SCRIPT }}"
+        [ -f "./${{ env.PREBUILD_SCRIPT }}" ] && source "./${{ env.PREBUILD_SCRIPT }}"
 
         # Build inside a docker container
         docker run \
