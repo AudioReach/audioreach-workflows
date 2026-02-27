@@ -21,9 +21,6 @@ on:
         required: true
         type: string
 
-# Allow the callee to receive whatever the caller granted.
-permissions: inherit
-
 jobs:
   load_parameters:
     uses: Audioreach/audioreach-workflows/.github/workflows/loading.yml@test-pre-build
