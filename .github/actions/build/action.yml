@@ -25,7 +25,7 @@ runs:
         [ -f "./${{ env.CONFIG_SCRIPT }}" ] && export CONFIG_SCRIPT="${{ env.CONFIG_SCRIPT }}"
         [ -f "./${{ env.SYNC_SCRIPT }}" ] && source "./${{ env.SYNC_SCRIPT }}"
         [ -f "./${{ env.APPLY_PATCH_SCRIPT }}" ] && source "./${{ env.APPLY_PATCH_SCRIPT }}"
-        [ -f "./${{ env.PREBUILD_SCRIPT }}" ] && export PREBUILD_SCRIPT="${{ env.PREBUILD_SCRIPT }} && source ./${{ env.PREBUILD_SCRIPT }}"
+        [ -f "./${{ env.PREBUILD_SCRIPT }}" ] && source ./${{ env.PREBUILD_SCRIPT }}"
 
         # Build inside a docker container
         docker run \
@@ -37,6 +37,7 @@ runs:
           -e BUILD_ARGS="${{ env.BUILD_ARGS }}" \
           -e BUILD_SCRIPT="${{ env.BUILD_SCRIPT }}" \
           -e PREBUILD_SCRIPT="${{ env.PREBUILD_SCRIPT }}" \
+          -e SDK_NAME="${{ env.SDK_NAME }}" \
           --privileged \
           ${{ inputs.docker_image }} \
           bash -c '
