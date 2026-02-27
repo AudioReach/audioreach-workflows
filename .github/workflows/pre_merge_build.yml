@@ -6,23 +6,21 @@ run-name: >-
       || format('Pre Merge Build: {0}', github.run_number) }}
 
 on:
-  workflow_dispatch:
+  workflow_call:
     inputs:
       pr_ref:
         description: "PR head ref (branch) when manually dispatching"
-        required: false
+        required: true
         type: string
       pr_repo:
         description: "PR head repo full name (owner/repo) when manually dispatching"
-        required: false
+        required: true
         type: string
-  pull_request_target:
-    types: [opened, synchronize, reopened]
-    branches:
-      - test-pre-build
-    paths-ignore:
-      - '.github/**'
-
+      event_name:
+        description: "Event name"
+        required: true
+        type: string
+        
 # Recommended: restrict permissions when using pull_request_target
 permissions:
   contents: read
