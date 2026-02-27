@@ -50,7 +50,7 @@ inputs:
   fail_action_on_failure:
     description: 'Fail action if LAVA job fails'
     required: false
-    default: 'false'
+    default: true
 
   # GitHub context
   run_id:
