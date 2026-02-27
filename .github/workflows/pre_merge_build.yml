@@ -20,41 +20,38 @@ on:
         description: "Event name"
         required: true
         type: string
-        
-# Recommended: restrict permissions when using pull_request_target
-permissions:
-  contents: read
-  pull-requests: write
+
+# Allow the callee to receive whatever the caller granted.
+permissions: inherit
 
 jobs:
   load_parameters:
     uses: Audioreach/audioreach-workflows/.github/workflows/loading.yml@test-pre-build
     with:
-      event_name: ${{ github.event_name }}
-      # Use PR values if PR event, else use workflow_dispatch inputs (may be empty).
-      pr_ref: ${{ github.event_name == 'pull_request_target' && github.event.pull_request.head.ref || inputs.pr_ref }}
-      pr_repo: ${{ github.event_name == 'pull_request_target' && github.event.pull_request.head.repo.full_name || inputs.pr_repo }}
+      event_name: ${{ inputs.event_name }}
+      pr_ref:  ${{ inputs.pr_ref }}
+      pr_repo: ${{ inputs.pr_repo }}
 
   build:
     needs: load_parameters
     uses: Audioreach/audioreach-workflows/.github/workflows/build.yml@test-pre-build
     secrets: inherit
     with:
-      build_args: ${{ needs.load_parameters.outputs.build_args }}
+      build_args:   ${{ needs.load_parameters.outputs.build_args }}
       build_matrix: ${{ needs.load_parameters.outputs.build_matrix }}
-      event_name: ${{ github.event_name }}
-      pr_ref: ${{ github.event_name == 'pull_request_target' && github.event.pull_request.head.ref || inputs.pr_ref }}
-      pr_repo: ${{ github.event_name == 'pull_request_target' && github.event.pull_request.head.repo.full_name || inputs.pr_repo }}
+      event_name:   ${{ inputs.event_name }}
+      pr_ref:       ${{ inputs.pr_ref }}
+      pr_repo:      ${{ inputs.pr_repo }}
 
   process_image:
     needs: [load_parameters, build]
     uses: Audioreach/audioreach-workflows/.github/workflows/process_image.yml@test-pre-build
     secrets: inherit
     with:
-      event_name: ${{ github.event_name }}
+      event_name:   ${{ inputs.event_name }}
       build_matrix: ${{ needs.load_parameters.outputs.build_matrix }}
-      pr_ref: ${{ github.event_name == 'pull_request_target' && github.event.pull_request.head.ref || inputs.pr_ref }}
-      pr_repo: ${{ github.event_name == 'pull_request_target' && github.event.pull_request.head.repo.full_name || inputs.pr_repo }}
+      pr_ref:       ${{ inputs.pr_ref }}
+      pr_repo:      ${{ inputs.pr_repo }}
 
   filter_test_matrix:
     needs: load_parameters
