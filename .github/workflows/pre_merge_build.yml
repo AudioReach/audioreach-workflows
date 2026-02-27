@@ -1,0 +1,105 @@
+---
+name: pre_merge_build
+run-name: >-
+  ${{ github.event_name == 'pull_request_target'
+      && format('Pre Merge Build PR: {0}', github.event.pull_request.number)
+      || format('Pre Merge Build: {0}', github.run_number) }}
+
+on:
+  workflow_dispatch:
+    inputs:
+      pr_ref:
+        description: "PR head ref (branch) when manually dispatching"
+        required: false
+        type: string
+      pr_repo:
+        description: "PR head repo full name (owner/repo) when manually dispatching"
+        required: false
+        type: string
+  pull_request_target:
+    types: [opened, synchronize, reopened]
+    branches:
+      - test-pre-build
+    paths-ignore:
+      - '.github/**'
+
+# Recommended: restrict permissions when using pull_request_target
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  load_parameters:
+    uses: Audioreach/audioreach-workflows/.github/workflows/loading.yml@test-pre-build
+    with:
+      event_name: ${{ github.event_name }}
+      # Use PR values if PR event, else use workflow_dispatch inputs (may be empty).
+      pr_ref: ${{ github.event_name == 'pull_request_target' && github.event.pull_request.head.ref || inputs.pr_ref }}
+      pr_repo: ${{ github.event_name == 'pull_request_target' && github.event.pull_request.head.repo.full_name || inputs.pr_repo }}
+
+  build:
+    needs: load_parameters
+    uses: Audioreach/audioreach-workflows/.github/workflows/build.yml@test-pre-build
+    secrets: inherit
+    with:
+      build_args: ${{ needs.load_parameters.outputs.build_args }}
+      build_matrix: ${{ needs.load_parameters.outputs.build_matrix }}
+      event_name: ${{ github.event_name }}
+      pr_ref: ${{ github.event_name == 'pull_request_target' && github.event.pull_request.head.ref || inputs.pr_ref }}
+      pr_repo: ${{ github.event_name == 'pull_request_target' && github.event.pull_request.head.repo.full_name || inputs.pr_repo }}
+
+  process_image:
+    needs: [load_parameters, build]
+    uses: Audioreach/audioreach-workflows/.github/workflows/process_image.yml@test-pre-build
+    secrets: inherit
+    with:
+      event_name: ${{ github.event_name }}
+      build_matrix: ${{ needs.load_parameters.outputs.build_matrix }}
+      pr_ref: ${{ github.event_name == 'pull_request_target' && github.event.pull_request.head.ref || inputs.pr_ref }}
+      pr_repo: ${{ github.event_name == 'pull_request_target' && github.event.pull_request.head.repo.full_name || inputs.pr_repo }}
+
+  filter_test_matrix:
+    needs: load_parameters
+    runs-on: ubuntu-latest
+    outputs:
+      test_matrix: ${{ steps.filter.outputs.test_matrix }}
+    steps:
+      - id: filter
+        shell: bash
+        run: |
+          MATRIX='${{ needs.load_parameters.outputs.build_matrix }}'
+
+          echo "RAW build_matrix:"
+          echo "$MATRIX"
+
+          echo "Validating JSON..."
+          echo "$MATRIX" | jq . >/dev/null
+
+          # Supports:
+          # 1) object keyed by name: { "name": {testing_enabled:true}, ... }
+          # 2) array of entries: [ {testing_enabled:true,...}, ... ]  (returns filtered array)
+          FILTERED=$(
+            echo "$MATRIX" | jq -c '
+              if type == "object" then
+                to_entries
+                | map(select(.value.testing_enabled == true))
+                | from_entries
+              elif type == "array" then
+                map(select(.testing_enabled == true))
+              else
+                error("Unsupported build_matrix JSON type: " + (type|tostring))
+              end
+            '
+          )
+
+          echo "Filtered matrix (pretty):"
+          echo "$FILTERED" | jq .
+
+          echo "test_matrix=$FILTERED" >> "$GITHUB_OUTPUT"
+
+  trigger_lava:
+    needs: [process_image, filter_test_matrix]
+    uses: Audioreach/audioreach-workflows/.github/workflows/test.yml@test-pre-build
+    secrets: inherit
+    with:
+      build_matrix: ${{ needs.filter_test_matrix.outputs.test_matrix }}

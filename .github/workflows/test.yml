@@ -110,7 +110,7 @@ jobs:
 
       - name: Submit LAVA test job
         id: lava_submit
-        uses: AudioReach/audioreach-workflows/.github/actions/lava-test-plans@master
+        uses: AudioReach/audioreach-workflows/.github/actions/lava-test-plans@test-pre-build
         with:
           image_name: ${{ matrix.build_matrix.image_name }}
           machine_name: ${{ matrix.build_matrix.machine_name }}
@@ -144,7 +144,7 @@ jobs:
 
       - name: Generate Summary
         id: generate-summary
-        uses: AudioReach/audioreach-workflows/.github/actions/test-job-summary@master
+        uses: AudioReach/audioreach-workflows/.github/actions/test-job-summary@test-pre-build
         with:
           build_id: ${{ github.run_id }}
           gh_token: ${{ secrets.GITHUB_TOKEN }}
