@@ -35,7 +35,6 @@ on:
         description: Optional base reference to use for building
         default: ${{ github.ref_name }}
 
-
       build_matrix:                 # <-- added (required for matrix below)
         required: true
         type: string
@@ -132,7 +131,6 @@ jobs:
               sudo mount rootfs.img /tmp/rootfs
               echo "Image mounted successfully"
               
-
               # Copy the arg build files to the mounted image
               sudo bash -c "source /workspace/${FILES_TO_COPY}"
               echo "Build files copied successfully"
