@@ -12,5 +12,12 @@
     "Image_name": "rb3gen2-core-kit",
     "Machine_name": "rb3gen2-core-kit",
     "Testing_enabled": true
-  }
+  },
+  "raspberrypi4": {
+    "file_name": "ci/raspberrypi4.yml",
+    "SDK_name": "sdk-raspberrypi4.sh",
+    "Image_name": "raspberrypi4",
+    "Machine_name": "raspberrypi4",
+    "Testing_enabled": true
+	}
 }
