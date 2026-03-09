@@ -89,6 +89,7 @@ jobs:
 
       - name: Pull meta-audioreach pre compiled image
         id: pull_meta_audioreach
+        if: ${{ env.IMAGE_NAME != 'raspberrypi4' }}
         uses: AudioReach/audioreach-workflows/.github/actions/aws-s3-exchanger@master
         with:
           s3_bucket: qli-prd-audior-gh-artifacts
@@ -99,6 +100,7 @@ jobs:
 
       - name: Extract image and mount
         id: extract_image
+        if: ${{ env.IMAGE_NAME != 'raspberrypi4' }}
         shell: bash
         run: |
           #!/bin/bash
@@ -145,6 +147,7 @@ jobs:
 
       - name: Create tar image for qcomflash directory
         id: create_tar_image
+        if: ${{ env.IMAGE_NAME != 'raspberrypi4' }}
         shell: bash
         run: |
           #!/bin/bash
@@ -156,6 +159,7 @@ jobs:
 
       - name: Upload tar image
         id: upload_tar_image
+        if: ${{ env.IMAGE_NAME != 'raspberrypi4' }}
         uses: AudioReach/audioreach-workflows/.github/actions/aws-s3-exchanger@master
         with:
           s3_bucket: qli-prd-audior-gh-artifacts
