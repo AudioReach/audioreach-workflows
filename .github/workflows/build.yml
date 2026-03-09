@@ -125,7 +125,7 @@ jobs:
           docker_image: ${{ steps.get-docker-image.outputs.image_name }}
         env:
           BUILD_ARGS: ${{ inputs.build_args }}
-          BUILD_SCRIPT: ${{ inputs.build_script }}
+          BUILD_SCRIPT: ${{ matrix.build_matrix.build_script }}
           SYNC_SCRIPT: ${{ inputs.sync_script }}
           APPLY_PATCH_SCRIPT: ${{ inputs.apply_patch_script }}
           CONFIG_SCRIPT: ${{ inputs.config_script }}
