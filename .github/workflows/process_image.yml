@@ -70,7 +70,7 @@ jobs:
 
       - name: Download build artifact
         id: download_build_artifact
-        uses: actions/download-artifact@v6
+        uses: actions/download-artifact@v7
         with:
           name: build_${{ env.IMAGE_NAME }}.tar
           path: ${{ github.workspace }}
