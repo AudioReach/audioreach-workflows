@@ -74,30 +74,18 @@ runs:
       with:
         script: |
           const fs = require('fs');
-          const targetImagePath = `${{ github.action_path }}/${{ inputs.target_image_file }}`;
-          let buildArgsPath = '';
+          const path = `${{ github.workspace }}/${{ inputs.build_options_file }}`;
+
           let options = '';
 
           try {
-            // Read target image configuration
-            const targetImageData = JSON.parse(fs.readFileSync(targetImagePath, 'utf8'));
-            const currentTarget = '${{ inputs.target }}' || Object.keys(targetImageData)[0];
-            
-            if (targetImageData[currentTarget]) {
-              buildArgsPath = `${{ github.workspace }}/${targetImageData[currentTarget].Build_args}`;
-              console.log(`Using build args file: ${buildArgsPath}`);
-              
-              if (fs.existsSync(buildArgsPath)) {
-                options = fs.readFileSync(buildArgsPath).toString().trim().split('\n').join(' ');
-                console.log(`✅ Successfully read build options for target: ${currentTarget}`);
-              } else {
-                console.log(`⚠️ Build args file not found: ${buildArgsPath}. Proceeding with empty options.`);
-              }
+            if (fs.existsSync(path)) {
+              options = fs.readFileSync(path).toString().trim().split('\n').join(' ');
             } else {
-              console.log(`⚠️ Target ${currentTarget} not found in configuration. Using empty options.`);
+              console.log(`⚠️ File not found: ${path}. Proceeding with empty options.`);
             }
           } catch (err) {
-            console.log(`❌ Error processing build args: ${err}. Using empty options.`);
+            console.log(`❌ Error reading file: ${err}. Using empty options.`);
           }
 
           console.log(`Parsed options: "${options}"`);
