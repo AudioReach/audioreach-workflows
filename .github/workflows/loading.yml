@@ -10,45 +10,41 @@ on:
         required: false
         type: string
         default: 'ci/build_options.txt'
-
-      
       target_image_file:
         description: JSON file to parse as matrix (e.g., Target_image.json)
         required: false
         type: string
         default: 'target_image.json'
-
-
+      target:
+        description: Specific target to build (optional)
+        required: false
+        type: string
+        default: ''
       event_name:
         required: false
         type: string
         description: Optional event name to use for building
         default: ${{ github.event_name }}
-
       pr_ref:
         required: false
         type: string
         description: Optional pull request reference to use for building
         default: ${{ github.event.pull_request.head.ref }}
-
       pr_repo:
         required: false
         type: string
         description: Optional pull request repository to use for building
         default: ${{ github.event.pull_request.head.repo.full_name }}
-
       base_ref:
         required: false
         type: string
         description: Optional base reference to use for building
         default: ${{ github.ref_name }}
-
     outputs:
       build_args:
         description: The build arguments
         value: ${{ jobs.loading.outputs.build_args }}
-      
-      build_matrix:                      # <-- added
+      build_matrix:
         description: JSON array to be used as a matrix via fromJSON()
         value: ${{ jobs.loading.outputs.build_matrix }}
 
@@ -58,6 +54,7 @@ jobs:
     outputs:
       build_args: ${{ steps.loading.outputs.build_args }}
       build_matrix: ${{ steps.loading.outputs.build_matrix }}
+
     steps:
       - name: Sync Codebase
         id: sync
@@ -74,3 +71,4 @@ jobs:
         with:
           build_options_file: ${{ inputs.build_options_file }}
           target_image_file: ${{ inputs.target_image_file }}
+          target: ${{ inputs.target }}

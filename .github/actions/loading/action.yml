@@ -13,6 +13,10 @@ inputs:
     required: true
     type: string
     default: 'target_image.json'
+  target:
+    description: Current target being built
+    required: false
+    type: string
 
 outputs:
   build_args:
@@ -25,7 +29,6 @@ outputs:
 runs:
   using: 'composite'
   steps:
-
     - name: Parse Target_image.json to matrix
       id: parse_matrix
       uses: actions/github-script@v7
@@ -71,18 +74,30 @@ runs:
       with:
         script: |
           const fs = require('fs');
-          const path = `${{ github.workspace }}/${{ matrix.build_matrix.build_args }}`;
-
+          const targetImagePath = `${{ github.action_path }}/${{ inputs.target_image_file }}`;
+          let buildArgsPath = '';
           let options = '';
 
           try {
-            if (fs.existsSync(path)) {
-              options = fs.readFileSync(path).toString().trim().split('\n').join(' ');
+            // Read target image configuration
+            const targetImageData = JSON.parse(fs.readFileSync(targetImagePath, 'utf8'));
+            const currentTarget = '${{ inputs.target }}' || Object.keys(targetImageData)[0];
+            
+            if (targetImageData[currentTarget]) {
+              buildArgsPath = `${{ github.workspace }}/${targetImageData[currentTarget].Build_args}`;
+              console.log(`Using build args file: ${buildArgsPath}`);
+              
+              if (fs.existsSync(buildArgsPath)) {
+                options = fs.readFileSync(buildArgsPath).toString().trim().split('\n').join(' ');
+                console.log(`✅ Successfully read build options for target: ${currentTarget}`);
+              } else {
+                console.log(`⚠️ Build args file not found: ${buildArgsPath}. Proceeding with empty options.`);
+              }
             } else {
-              console.log(`⚠️ File not found: ${path}. Proceeding with empty options.`);
+              console.log(`⚠️ Target ${currentTarget} not found in configuration. Using empty options.`);
             }
           } catch (err) {
-            console.log(`❌ Error reading file: ${err}. Using empty options.`);
+            console.log(`❌ Error processing build args: ${err}. Using empty options.`);
           }
 
           console.log(`Parsed options: "${options}"`);
