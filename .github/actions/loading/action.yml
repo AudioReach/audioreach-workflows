@@ -47,6 +47,8 @@ runs:
 
           console.log(`Parsed options: "${options}"`);
           core.setOutput('build_args', options);
+      env:
+          BUILD_OPTIONS_FILE: ${{ matrix.build_matrix.build_args }}
 
     - name: Parse Target_image.json to matrix
       id: parse_matrix
