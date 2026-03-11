@@ -77,6 +77,7 @@ runs:
                 image_name: cfg.Image_name,
                 machine_name: cfg.Machine_name,
                 build_script: cfg.Build_script,
+                build_args: cfg.Build_args,
                 testing_enabled: cfg.Testing_enabled
               }));
               // Output a FLAT ARRAY to match strategy.matrix.build_matrix: fromJson(...)
