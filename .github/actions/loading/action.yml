@@ -37,8 +37,8 @@ runs:
           const fs = require('fs');
           const path = require('path');
 
-          const targetFile = `${{ inputs.target_image_file }}`;
-          const p = path.join(process.env.GITHUB_WORKSPACE, targetFile);
+          
+          const p = `${{ github.action_path }}/${{ inputs.target_image_file }}`;
 
           if (!fs.existsSync(p)) {
             core.setFailed(`Target image file not found: ${p}`);
