@@ -123,6 +123,7 @@ jobs:
         uses: AudioReach/audioreach-workflows/.github/actions/build@sample
         with:
           docker_image: ${{ steps.get-docker-image.outputs.image_name }}
+          build_matrix: ${{ toJSON(matrix.build_matrix) }}
         env:
           BUILD_ARGS: ${{ matrix.build_matrix.build_args }}
           BUILD_SCRIPT: ${{ matrix.build_matrix.build_script }}
