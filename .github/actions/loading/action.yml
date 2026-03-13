@@ -2,11 +2,6 @@
 name: Load Parameters
 description: Load parameters for the workflow
 inputs:
-  build_options_file:
-    description: The file containing build options
-    required: false
-    type: string
-    default: 'ci/build_options.txt'
   target_image_file:
     description: JSON file to parse as matrix (e.g., Target_image.json)
     required: true

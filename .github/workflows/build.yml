@@ -5,6 +5,11 @@ description: Reusable workflow for build instructions
 on:
   workflow_call:
     inputs:
+      build_args:
+        required: false
+        type: string
+        description: Required build arguments
+
       build_matrix:
         required: true
         type: string
