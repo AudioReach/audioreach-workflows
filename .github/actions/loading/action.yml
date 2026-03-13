@@ -49,16 +49,17 @@ runs:
                 const disabledRepos = cfg.Disabled_repos || [];
                 const isDisabledForRepo = disabledRepos.includes(currentRepo);
                 
-                // Check if build options file exists and read its contents
-                const buildOptionsPath = path.join(process.env.GITHUB_WORKSPACE, cfg.Build_args);
+                // Read build options from file
                 let buildArgs = '';
-                
-                if (fs.existsSync(buildOptionsPath)) {
+                try {
+                  const buildOptionsPath = path.join(process.env.GITHUB_WORKSPACE, cfg.Build_args);
                   buildArgs = fs.readFileSync(buildOptionsPath, 'utf8')
                     .toString()
                     .trim()
                     .split('\n')
                     .join(' ');
+                } catch (err) {
+                  console.log(`❌ Error reading build options file for ${target}: ${err}`);
                 }
                 
                 if (isDisabledForRepo) {
@@ -91,16 +92,33 @@ runs:
               }
               
               const out = JSON.stringify(include);
-              core.info(`Build matrix (flat): ${out}`);
               
-              const includedTargets = include.map(i => i.target).join(', ');
+              // Log included and excluded targets with details
+              const includedTargets = include.map(i => {
+                return `${i.target} (using build args: ${i.build_args.substring(0, 50)}...)`;
+              }).join('\n');
+              
               const excludedTargets = Object.keys(data)
                 .filter(t => !include.find(i => i.target === t))
-                
-                .join(', ');
+                .map(t => {
+                  const cfg = data[t];
+                  const buildOptionsPath = path.join(process.env.GITHUB_WORKSPACE, cfg.Build_args);
+                  const reason = [];
+                  if (!fs.existsSync(path.join(process.env.GITHUB_WORKSPACE, cfg.Build_script))) {
+                    reason.push('missing build script');
+                  }
+                  if (!fs.existsSync(buildOptionsPath)) {
+                    reason.push('missing build options file');
+                  }
+                  if ((cfg.Disabled_repos || []).includes(currentRepo)) {
+                    reason.push('disabled for this repository');
+                  }
+                  return `${t} (${reason.join(', ')})`;
+                })
+                .join('\n');
               
-              core.info(`Targets included: ${includedTargets || 'none'}`);
-              core.info(`Targets excluded: ${excludedTargets || 'none'}`);
+              core.info('Targets included:\n' + (includedTargets || 'none'));
+              core.info('Targets excluded:\n' + (excludedTargets || 'none'));
               
               if (include.length === 0) {
                 core.warning('No valid targets found for building');
