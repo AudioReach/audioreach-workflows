@@ -51,16 +51,17 @@ runs:
                 
                 // Read build options from file
                 let buildArgs = '';
-               try {
-                  const buildOptionsPath = path.join(process.env.GITHUB_WORKSPACE, cfg.Build_args);
-                  buildArgs = fs.readFileSync(buildOptionsPath, 'utf8')
-                    .toString()
-                    .trim()
-                    .split('\n')
-                    .join(' ');
-                } catch (err) {
-                  console.log(`❌ Error reading build options file for ${target}: ${err}`);
-                }
+               
+                try {
+                  if (cfg.Build_args.startsWith('--')) {
+                        // Already expanded flags
+                        buildArgs = cfg.Build_args;
+                        } else {
+                        const buildOptionsPath = path.join(process.env.GITHUB_WORKSPACE, cfg.Build_args);
+                        buildArgs = fs.readFileSync(buildOptionsPath, 'utf8').replace(/\r/g, '').trim().split('\n').join(' ');}
+              } catch (err) {
+              console.log(`❌ Error processing build args for ${target}: ${err}`);}
+
                 
                 if (isDisabledForRepo) {
                   core.warning(`Skipping target "${target}" because build is disabled for repository: ${currentRepo}`);
