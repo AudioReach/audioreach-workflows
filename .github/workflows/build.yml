@@ -118,6 +118,14 @@ jobs:
           echo "./install" | ./${{ env.SDK_NAME }}
           echo "SDK Script ran successfully"
 
+      - name: Debug matrix values before build
+        shell: bash
+        run: |
+          echo "=== DEBUG: Workflow-level values ==="
+          echo "matrix.build_matrix.build_args = ${{ matrix.build_matrix.build_args }}"
+          echo "matrix.build_matrix.build_script = ${{ matrix.build_matrix.build_script }}"
+          echo "===================================="
+        
       - name: Build
         id: build
         uses: AudioReach/audioreach-workflows/.github/actions/build@sample
