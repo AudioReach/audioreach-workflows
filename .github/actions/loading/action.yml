@@ -86,14 +86,26 @@ runs:
                   image_name: cfg.Image_name,
                   machine_name: cfg.Machine_name,
                   build_script: cfg.Build_script,
-                  build_args: buildArgs, // Include the actual build arguments instead of the file path
+                  build_args: buildArgs,
                   testing_enabled: cfg.Testing_enabled
                 });
               }
               
               const out = JSON.stringify(include);
               
-              // Log included and excluded targets with details
+              // Enhanced logging for matrix structure
+              core.info('=== Matrix Structure ===');
+              include.forEach((item, index) => {
+                core.info(`\nTarget ${index + 1}: ${item.target}`);
+                core.info(`  Machine: ${item.machine_name}`);
+                core.info(`  Image: ${item.image_name}`);
+                core.info(`  Build Script: ${item.build_script}`);
+                core.info(`  Build Args: ${item.build_args.substring(0, 100)}...`);
+                core.info(`  Testing Enabled: ${item.testing_enabled}`);
+              });
+              core.info('=== End Matrix Structure ===\n');
+              
+              // Log included and excluded targets
               const includedTargets = include.map(i => {
                 return `${i.target} (using build args: ${i.build_args.substring(0, 50)}...)`;
               }).join('\n');
@@ -123,6 +135,10 @@ runs:
               if (include.length === 0) {
                 core.warning('No valid targets found for building');
               }
+              
+              // Log the final matrix output
+              core.info('\nFinal Matrix Output:');
+              core.info(out);
               
               core.setOutput('build_matrix', out);
             }
