@@ -5,7 +5,7 @@
     "Image_name": "rb3gen2-core-kit-6.18",
     "Machine_name": "rb3gen2-core-kit",
     "Build_script": "ci/build.sh",
-	"Build_args": "--build=x86_64-linux --host=aarch64-poky-linux --prefix=/usr --exec_prefix=/usr --bindir=/usr/bin --sbindir=/usr/sbin --libexecdir=/usr/libexec --datadir=/usr/share --sysconfdir=/etc --sharedstatedir=/com --localstatedir=/var --libdir=/usr/lib --includedir=/usr/include --oldincludedir=/usr/include --infodir=/usr/share/info --mandir=/usr/share/man --disable-silent-rules --disable-dependency-tracking --with-syslog --with-glib --without-cutils --with-dummy_diag --with-qcom --with-audio_dma_support --without-ats_transport_tcp_ip --without-ats_data_logging --disable-static",
+	"Build_args": "ci/build_options.txt",
     "Testing_enabled": true,
     "Disabled_repos": []
   },
@@ -15,7 +15,7 @@
     "Image_name": "rb3gen2-core-kit",
     "Machine_name": "rb3gen2-core-kit",
     "Build_script": "ci/build.sh",
-	"Build_args": "--build=x86_64-linux --host=aarch64-poky-linux --prefix=/usr --exec_prefix=/usr --bindir=/usr/bin --sbindir=/usr/sbin --libexecdir=/usr/libexec --datadir=/usr/share --sysconfdir=/etc --sharedstatedir=/com --localstatedir=/var --libdir=/usr/lib --includedir=/usr/include --oldincludedir=/usr/include --infodir=/usr/share/info --mandir=/usr/share/man --disable-silent-rules --disable-dependency-tracking --with-syslog --with-glib --without-cutils --with-dummy_diag --with-qcom --with-audio_dma_support --without-ats_transport_tcp_ip --without-ats_data_logging --disable-static",
+	"Build_args": "ci/build_options.txt",
     "Testing_enabled": true,
     "Disabled_repos": []
   },
@@ -25,7 +25,7 @@
     "Image_name": "raspberrypi4",
     "Machine_name": "raspberrypi4",
     "Build_script": "ci/rpi_build.sh",
-	"Build_args": "--build=x86_64-linux --host=arm-poky-linux-gnueabi --target=arm-poky-linux-gnueabi --prefix=/usr --exec_prefix=/usr --bindir=/usr/bin --sbindir=/usr/sbin --libexecdir=/usr/libexec --datadir=/usr/share --sysconfdir=/etc --sharedstatedir=/com --localstatedir=/var --libdir=/usr/lib --includedir=/usr/include --oldincludedir=/usr/include --infodir=/usr/share/info --mandir=/usr/share/man --disable-silent-rules --disable-dependency-tracking --with-syslog --with-glib --without-cutils --with-dummy_diag --disable-static --with-are-on-apps --without-qcom",
+	"Build_args": "ci/rpi_build_options.txt",
     "Testing_enabled": false,
     "Disabled_repos": ["audioreach-pal", "audioreach-conf", "audioreach-audio-utils"]
   }

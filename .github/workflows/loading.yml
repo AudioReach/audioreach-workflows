@@ -69,6 +69,4 @@ jobs:
         id: loading
         uses: AudioReach/audioreach-workflows/.github/actions/loading@sample
         with:
-          build_options_file: ${{ inputs.build_options_file }}
           target_image_file: ${{ inputs.target_image_file }}
-          target: ${{ inputs.target }}
