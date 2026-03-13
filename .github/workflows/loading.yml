@@ -44,10 +44,6 @@ on:
         default: ${{ github.ref_name }}
 
     outputs:
-      build_args:
-        description: The build arguments
-        value: ${{ jobs.loading.outputs.build_args }}
-      
       build_matrix:                      # <-- added
         description: JSON array to be used as a matrix via fromJSON()
         value: ${{ jobs.loading.outputs.build_matrix }}
@@ -56,7 +52,6 @@ jobs:
   loading:
     runs-on: ubuntu-latest
     outputs:
-      build_args: ${{ steps.loading.outputs.build_args }}
       build_matrix: ${{ steps.loading.outputs.build_matrix }}
     steps:
       - name: Sync Codebase
