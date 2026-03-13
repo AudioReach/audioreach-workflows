@@ -11,6 +11,7 @@ outputs:
   build_matrix:
     description: JSON to be used as a matrix via fromJSON()
     value: ${{ steps.parse_matrix.outputs.build_matrix }}
+
 runs:
   using: 'composite'
   steps:
@@ -22,7 +23,7 @@ runs:
           const fs = require('fs');
           const path = require('path');
           const p = `${{ github.action_path }}/${{ inputs.target_image_file }}`;
-          
+
           if (!fs.existsSync(p)) {
             core.setFailed(`Target image file not found: ${p}`);
           } else {
@@ -33,67 +34,74 @@ runs:
             } catch (e) {
               core.setFailed(`Invalid JSON in ${p}: ${e.message}`);
             }
-            
+
             if (data) {
               const include = [];
               const currentRepo = process.env.GITHUB_REPOSITORY.split('/')[1];
               core.info(`Current repository: ${currentRepo}`);
-              
+
               for (const [target, cfg] of Object.entries(data)) {
                 // Check build script existence
                 const buildScript = cfg.Build_script;
                 const buildScriptAbs = path.join(process.env.GITHUB_WORKSPACE, buildScript);
                 const scriptExists = fs.existsSync(buildScriptAbs);
-                
+
                 // Check if build is disabled for this repository
                 const disabledRepos = cfg.Disabled_repos || [];
                 const isDisabledForRepo = disabledRepos.includes(currentRepo);
-                
+
                 // Read build options from file
                 let buildArgs = '';
-               
                 try {
                   if (cfg.Build_args.startsWith('--')) {
-                        // Already expanded flags
-                        buildArgs = cfg.Build_args;
-                        } else {
-                        const buildOptionsPath = path.join(process.env.GITHUB_WORKSPACE, cfg.Build_args);
-                        buildArgs = fs.readFileSync(buildOptionsPath, 'utf8').replace(/\r/g, '').trim().split('\n').join(' ');}
-              } catch (err) {
-              console.log(`❌ Error processing build args for ${target}: ${err}`);}
+                    // Already expanded flags
+                    buildArgs = cfg.Build_args;
+                  } else {
+                    const buildOptionsPath = path.join(process.env.GITHUB_WORKSPACE, cfg.Build_args);
+                    buildArgs = fs.readFileSync(buildOptionsPath, 'utf8')
+                      .replace(/\r/g, '')
+                      .trim()
+                      .split('\n')
+                      .join(' ');
+                  }
+                } catch (err) {
+                  console.log(`❌ Error processing build args for ${target}: ${err}`);
+                }
 
-                
                 if (isDisabledForRepo) {
                   core.warning(`Skipping target "${target}" because build is disabled for repository: ${currentRepo}`);
                   continue;
                 }
-                
+
                 if (!scriptExists) {
                   core.warning(`Skipping target "${target}" because build script not found: ${buildScript}`);
                   continue;
                 }
-                
+
                 if (!buildArgs) {
                   core.warning(`Skipping target "${target}" because build options file not found or empty: ${cfg.Build_args}`);
                   continue;
                 }
-                
+
+                // ✅ FIX: Explicit object, NO spread of cfg
                 include.push({
                   target,
-                  ...cfg,
                   target_name: target,
                   test_file: cfg.Test_file,
                   sdk_name: cfg.SDK_name,
                   image_name: cfg.Image_name,
                   machine_name: cfg.Machine_name,
                   build_script: cfg.Build_script,
-                  build_args: buildArgs,
-                  testing_enabled: cfg.Testing_enabled
+                  disabled_repos: cfg.Disabled_repos,
+                  testing_enabled: cfg.Testing_enabled,
+
+                  // ✅ Single source of truth
+                  build_args: buildArgs
                 });
               }
-              
+
               const out = JSON.stringify(include);
-              
+
               // Enhanced logging for matrix structure
               core.info('=== Matrix Structure ===');
               include.forEach((item, index) => {
@@ -105,42 +113,26 @@ runs:
                 core.info(`  Testing Enabled: ${item.testing_enabled}`);
               });
               core.info('=== End Matrix Structure ===\n');
-              
+
               // Log included and excluded targets
-              const includedTargets = include.map(i => {
-                return `${i.target} (using build args: ${i.build_args.substring(0, 50)}...)`;
-              }).join('\n');
-              
+              const includedTargets = include.map(i =>
+                `${i.target} (using build args: ${i.build_args.substring(0, 50)}...)`
+              ).join('\n');
+
               const excludedTargets = Object.keys(data)
                 .filter(t => !include.find(i => i.target === t))
-                .map(t => {
-                  const cfg = data[t];
-                  const buildOptionsPath = path.join(process.env.GITHUB_WORKSPACE, cfg.Build_args);
-                  const reason = [];
-                  if (!fs.existsSync(path.join(process.env.GITHUB_WORKSPACE, cfg.Build_script))) {
-                    reason.push('missing build script');
-                  }
-                  if (!fs.existsSync(buildOptionsPath)) {
-                    reason.push('missing build options file');
-                  }
-                  if ((cfg.Disabled_repos || []).includes(currentRepo)) {
-                    reason.push('disabled for this repository');
-                  }
-                  return `${t} (${reason.join(', ')})`;
-                })
                 .join('\n');
-              
+
               core.info('Targets included:\n' + (includedTargets || 'none'));
               core.info('Targets excluded:\n' + (excludedTargets || 'none'));
-              
+
               if (include.length === 0) {
                 core.warning('No valid targets found for building');
               }
-              
+
               // Log the final matrix output
               core.info('\nFinal Matrix Output:');
               core.info(out);
-              
+
               core.setOutput('build_matrix', out);
             }
-          }
