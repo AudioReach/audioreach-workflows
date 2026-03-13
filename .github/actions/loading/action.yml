@@ -51,7 +51,7 @@ runs:
                 
                 // Read build options from file
                 let buildArgs = '';
-                try {
+               try {
                   const buildOptionsPath = path.join(process.env.GITHUB_WORKSPACE, cfg.Build_args);
                   buildArgs = fs.readFileSync(buildOptionsPath, 'utf8')
                     .toString()
