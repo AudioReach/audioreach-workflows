@@ -5,6 +5,7 @@
     "Image_name": "rb3gen2-core-kit-6.18",
     "Machine_name": "rb3gen2-core-kit",
     "Build_script": "ci/build.sh",
+    "Build_args": "ci/build_options.txt",
     "Testing_enabled": true,
     "Disabled_repos": []
   },
@@ -14,6 +15,7 @@
     "Image_name": "rb3gen2-core-kit",
     "Machine_name": "rb3gen2-core-kit",
     "Build_script": "ci/build.sh",
+    "Build_args": "ci/build_options.txt",
     "Testing_enabled": true,
     "Disabled_repos": []
   },
@@ -23,7 +25,8 @@
     "Image_name": "raspberrypi4",
     "Machine_name": "raspberrypi4",
     "Build_script": "ci/rpi_build.sh",
+    "Build_args": "ci/rpi_build_options.txt",
     "Testing_enabled": false,
-    "Disabled_repos": ["audioreach-graphservices", "audioreach-pal", "audioreach-conf", "audioreach-audio-utils"]
+    "Disabled_repos": ["audioreach-pal", "audioreach-conf", "audioreach-audio-utils", "audioreach-engine"]
   }
 }
