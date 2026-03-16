@@ -1,48 +1,20 @@
 ---
 name: Load Parameters
 description: Load parameters for the workflow
-
 inputs:
-  build_options_file:
-    description: The file containing build options
-    required: true
-    type: string
-    default: 'ci/build_options.txt'
   target_image_file:
     description: JSON file to parse as matrix (e.g., Target_image.json)
     required: true
     type: string
     default: 'target_image.json'
 outputs:
-  build_args:
-    description: The build arguments
-    value: ${{ steps.parse_args.outputs.build_args }}
   build_matrix:
     description: JSON to be used as a matrix via fromJSON()
     value: ${{ steps.parse_matrix.outputs.build_matrix }}
+
 runs:
   using: 'composite'
   steps:
-    - name: Parse the build arguments
-      id: parse_args
-      uses: actions/github-script@v7
-      with:
-        script: |
-          const fs = require('fs');
-          const path = `${{ github.workspace }}/${{ inputs.build_options_file }}`;
-          let options = '';
-          try {
-            if (fs.existsSync(path)) {
-              options = fs.readFileSync(path).toString().trim().split('\n').join(' ');
-            } else {
-              console.log(`⚠️ File not found: ${path}. Proceeding with empty options.`);
-            }
-          } catch (err) {
-            console.log(`❌ Error reading file: ${err}. Using empty options.`);
-          }
-          console.log(`Parsed options: "${options}"`);
-          core.setOutput('build_args', options);
-
     - name: Parse Target_image.json to matrix
       id: parse_matrix
       uses: actions/github-script@v7
@@ -51,7 +23,7 @@ runs:
           const fs = require('fs');
           const path = require('path');
           const p = `${{ github.action_path }}/${{ inputs.target_image_file }}`;
-          
+
           if (!fs.existsSync(p)) {
             core.setFailed(`Target image file not found: ${p}`);
           } else {
@@ -62,58 +34,78 @@ runs:
             } catch (e) {
               core.setFailed(`Invalid JSON in ${p}: ${e.message}`);
             }
-            
+
             if (data) {
               const include = [];
               const currentRepo = process.env.GITHUB_REPOSITORY.split('/')[1];
               core.info(`Current repository: ${currentRepo}`);
-              
+
               for (const [target, cfg] of Object.entries(data)) {
                 // Check build script existence
                 const buildScript = cfg.Build_script;
                 const buildScriptAbs = path.join(process.env.GITHUB_WORKSPACE, buildScript);
                 const scriptExists = fs.existsSync(buildScriptAbs);
-                
+
                 // Check if build is disabled for this repository
                 const disabledRepos = cfg.Disabled_repos || [];
                 const isDisabledForRepo = disabledRepos.includes(currentRepo);
-                
+
+                // Read build options from file
+                let buildArgs = '';
+                const buildOptionsPath = path.join(process.env.GITHUB_WORKSPACE, cfg.Build_args);
+
+
+                if (!fs.existsSync(buildOptionsPath)) {
+                   core.warning( `Skipping target "${target}" because build options file not found: ${cfg.Build_args}`);}
+                 else {
+                  buildArgs = fs.readFileSync(buildOptionsPath, 'utf8')
+                    .replace(/\r/g, '')
+                    .trim()
+                    .split('\n')
+                    .join(' ');
+                }
+
                 if (isDisabledForRepo) {
-                  core.warning(`Skipping target "${target}" because build is disabled for repository: ${currentRepo}`);
+                  core.warning(
+                    `Skipping target "${target}" because build is disabled for repository: ${currentRepo}`
+                  );
                   continue;
                 }
 
                 if (!scriptExists) {
-                  core.warning(`Skipping target "${target}" because build script not found: ${buildScript}`);
+                  core.warning(
+                    `Skipping target "${target}" because build script not found: ${buildScript}`
+                  );
                   continue;
                 }
-                
+
                 include.push({
                   target,
-                  ...cfg,
                   target_name: target,
                   test_file: cfg.Test_file,
                   sdk_name: cfg.SDK_name,
                   image_name: cfg.Image_name,
                   machine_name: cfg.Machine_name,
                   build_script: cfg.Build_script,
-                  testing_enabled: cfg.Testing_enabled
+                  disabled_repos: cfg.Disabled_repos,
+                  testing_enabled: cfg.Testing_enabled,
+                  build_args: buildArgs
                 });
               }
-              
+
               // Output a FLAT ARRAY to match strategy.matrix.build_matrix: fromJson(...)
               const out = JSON.stringify(include);
               core.info(`Build matrix (flat): ${out}`);
-              
+
               // Log included and excluded targets
               const includedTargets = include.map(i => i.target).join(', ');
               const excludedTargets = Object.keys(data)
                 .filter(t => !include.find(i => i.target === t))
                 .join(', ');
-              
+
               core.info(`Targets included: ${includedTargets || 'none'}`);
               core.info(`Targets excluded: ${excludedTargets || 'none'}`);
-              
+
               core.setOutput('build_matrix', out);
             }
           }
