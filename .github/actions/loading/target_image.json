@@ -28,5 +28,25 @@
     "Build_args": "ci/rpi_build_options.txt",
     "Testing_enabled": false,
     "Disabled_repos": ["audioreach-pal", "audioreach-conf", "audioreach-audio-utils", "audioreach-engine"]
+  },
+  "sm8750-mtp": {
+    "Test_file": "ci/sm8750-mtp.yml",
+    "SDK_name": "sdk-sm8750-mtp.sh",
+    "Image_name": "sm8750-mtp",
+    "Machine_name": "sm8750-mtp",
+    "Build_script": "ci/build.sh",
+    "Build_args": "ci/build_options.txt",
+    "Testing_enabled": false,
+    "Disabled_repos": []
+  },
+  "kaanapali-mtp": {
+    "Test_file": "ci/kaanapali-mtp.yml",
+    "SDK_name": "sdk-kaanapali-mtp.sh",
+    "Image_name": "kaanapali-mtp",
+    "Machine_name": "kaanapali-mtp",
+    "Build_script": "ci/build.sh",
+    "Build_args": "ci/build_options.txt",
+    "Testing_enabled": false,
+    "Disabled_repos": []
   }
 }
