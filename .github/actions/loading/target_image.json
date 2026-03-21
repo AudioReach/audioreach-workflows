@@ -34,7 +34,7 @@
     "SDK_name": "sdk-sm8750-mtp.sh",
     "Image_name": "sm8750-mtp",
     "Machine_name": "sm8750-mtp",
-    "Build_script": "ci/build.sh",
+    "Build_script": "ci/pkl_build.sh",
     "Build_args": "ci/build_options.txt",
     "Testing_enabled": false,
     "Disabled_repos": []
@@ -44,7 +44,7 @@
     "SDK_name": "sdk-kaanapali-mtp.sh",
     "Image_name": "kaanapali-mtp",
     "Machine_name": "kaanapali-mtp",
-    "Build_script": "ci/build.sh",
+    "Build_script": "ci/knp_build.sh",
     "Build_args": "ci/build_options.txt",
     "Testing_enabled": false,
     "Disabled_repos": []
