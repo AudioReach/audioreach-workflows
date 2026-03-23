@@ -28,6 +28,12 @@ on:
         type: string
         default: '{"body-char-limit": 72, "sub-char-limit": 72}'
         description: 'Extra options as YAML/JSON object string, e.g., {"body-char-limit": 72, "sub-char-limit": 72, "check-blank-line": true}'
+      enable-armor-checkers:
+        type: boolean
+        default: true
+      armor-checker-options:
+        type: string
+        default: '{"build-script":"ci/build.sh","runs-on":{"group":"GHA-AudioReach-SelfHosted-RG","labels":["self-hosted", "audior-prd-u2204-x64-large-od-ephem"]}}'
 permissions:
   contents: read
   security-events: write
@@ -45,3 +51,5 @@ jobs:
       enable-dependency-review: ${{ inputs.enable-dependency-review }}
       enable-commit-msg-check: ${{ inputs.enable-commit-msg-check }}
       commit-msg-check-extra-options: ${{ inputs.commit-msg-check-extra-options }}
+      enable-armor-checkers: ${{ inputs.enable-armor-checkers }}
+      armor-checker-options: ${{ inputs.armor-checker-options }}
