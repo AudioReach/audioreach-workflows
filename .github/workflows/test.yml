@@ -9,41 +9,32 @@ on:
         required: true
         type: string
 
-      # === Optional knobs for lava-test-plans ===
       distro_name:
-        description: Default distro for lava-test-plans if not provided in matrix
         required: false
         type: string
         default: qcom-distro
       kernel:
-        description: Extra path suffix for kernel (e.g., -6.18). Default empty.
         required: false
         type: string
         default: ""
       testplan:
-        description: Test plan name to use in job generation (lava-test-plans)
         required: false
         type: string
         default: pre-merge
       prefix:
-        description: Prefix for the compressed artifact with generated jobs
         required: false
         type: string
         default: testjobs
-      
-      # === LAVA server configuration ===
+
       lava_url:
-        description: LAVA server URL
         required: false
         type: string
         default: lava.infra.foundries.io
       wait_for_job:
-        description: Wait for LAVA job to complete
         required: false
         type: boolean
         default: true
       fail_on_test_failure:
-        description: Fail workflow if LAVA test fails
         required: false
         type: boolean
         default: true
@@ -52,38 +43,44 @@ jobs:
   submit_lava:
     runs-on:
       group: GHA-AudioReach-SelfHosted-RG
-      labels: [ self-hosted, audior-prd-u2204-x64-large-od-ephem ]
+      labels: [self-hosted, audior-prd-u2204-x64-large-od-ephem]
+
+    outputs:
+      tests_executed: ${{ steps.set-tests-flag.outputs.tests_executed }}
+
     strategy:
       fail-fast: false
       matrix:
         build_matrix: ${{ fromJSON(inputs.build_matrix) }}
 
     steps:
+      - name: Set tests_executed=false (testing disabled)
+        id: set-tests-flag
+        if: ${{ matrix.build_matrix.testing_enabled != true }}
+        run: |
+          echo "tests_executed=false" >> "$GITHUB_OUTPUT"
 
-      # If your matrix sometimes uses a string "true", replace the if: with:
-      # if: ${{ !fromJSON('["true", true]').includes(matrix.build_matrix.testing_enabled) }}
       - name: Skip if testing disabled
         if: ${{ matrix.build_matrix.testing_enabled != true }}
-        env:
-          TESTING_ENABLED: ${{ matrix.build_matrix.testing_enabled }}
-          IMAGE_NAME: ${{ matrix.build_matrix.image_name }}
         run: |
-          echo "testing_enabled=\"$TESTING_ENABLED\""
-          echo "Testing disabled for target \"$IMAGE_NAME\". Skipping."
+          echo "Testing disabled for ${{ matrix.build_matrix.image_name }}"
           exit 0
 
-      - name: Clone repository
-        uses: actions/checkout@v6
+      - name: Set tests_executed=true
+        id: set-tests-flag
+        if: ${{ matrix.build_matrix.testing_enabled == true }}
+        run: |
+          echo "tests_executed=true" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0
           repository: AudioReach/meta-audioreach
 
       - name: Download presigned URL
-        id: download_url
         uses: actions/download-artifact@v7
         with:
           name: presigned_url_${{ matrix.build_matrix.image_name }}.txt
-          path: ${{ github.workspace }}
 
       - name: Get build URL
         id: get_build_url
@@ -91,25 +88,13 @@ jobs:
         with:
           script: |
             const fs = require('fs')
-            const filePath = `${{ github.workspace }}/presigned_url_${{ matrix.build_matrix.image_name }}.txt`
-            const url = fs.readFileSync(filePath, 'utf8').toString().trim()
-            console.log(url)
+            const url = fs.readFileSync(
+              `presigned_url_${{ matrix.build_matrix.image_name }}.txt`,
+              'utf8'
+            ).trim()
             core.setOutput('build_url', url)
 
-      - name: Print trigger info
-        env:
-          EVENT_NAME: ${{ github.event_name }}
-          BUILD_URL: ${{ steps.get_build_url.outputs.build_url }}
-          IMAGE_NAME: ${{ matrix.build_matrix.image_name }}
-          MACHINE_NAME: ${{ matrix.build_matrix.machine_name }}
-        run: |
-          echo "Triggered by \"$EVENT_NAME\""
-          echo "Build URL: \"$BUILD_URL\""
-          echo "Image: \"$IMAGE_NAME\""
-          echo "Machine: \"$MACHINE_NAME\""
-
       - name: Submit LAVA test job
-        id: lava_submit
         uses: AudioReach/audioreach-workflows/.github/actions/lava-test-plans@temp
         with:
           image_name: ${{ matrix.build_matrix.image_name }}
@@ -123,67 +108,44 @@ jobs:
           lava_url: ${{ inputs.lava_url }}
           wait_for_job: ${{ inputs.wait_for_job }}
           fail_action_on_failure: ${{ inputs.fail_on_test_failure }}
-          run_id: ${{ github.run_id }}
-          run_attempt: ${{ github.run_attempt }}
 
   publish-test-summary:
-    name: "Publish Tests Summary"
-    needs: [submit_lava]
-    if: ${{ always() }}
+    name: Publish Tests Summary
+    needs: submit_lava
+    if: ${{ needs.submit_lava.outputs.tests_executed == 'true' }}
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        build_matrix: ${{ fromJSON(inputs.build_matrix) }}
+
     permissions:
       checks: write
       pull-requests: write
-    outputs:
-      summary_id: ${{ steps.generate-summary.outputs.artifact_id }}
 
     steps:
       - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-      
-      - name: Skip if testing disabled
-        if: ${{ matrix.build_matrix.testing_enabled != true }}
-        env:
-          TESTING_ENABLED: ${{ matrix.build_matrix.testing_enabled }}
-          IMAGE_NAME: ${{ matrix.build_matrix.image_name }}
-        run: |
-          echo "testing_enabled=\"$TESTING_ENABLED\""
-          echo "Testing disabled for target \"$IMAGE_NAME\". Skipping."
-          exit 0
 
       - name: Generate Summary
-        id: generate-summary
         uses: AudioReach/audioreach-workflows/.github/actions/test-job-summary@temp
         with:
           build_id: ${{ github.run_id }}
           gh_token: ${{ secrets.GITHUB_TOKEN }}
           summary_file_name: test_job_summary
-      
-      # Download ALL matching summary artifacts from parallel jobs and put into one folder.
+
       - name: Download Summaries
         uses: actions/download-artifact@v6
         with:
-          pattern: test_job_summary*          # match all parallel summaries
-          merge-multiple: true                # place all matched artifact contents into a single folder
+          pattern: test_job_summary*
+          merge-multiple: true
           path: summaries
 
       - name: Publish Test Job Details
         run: |
-          shopt -s nullglob
           files=(summaries/test_job_summary*)
           if [ ${#files[@]} -eq 0 ]; then
-            echo ":warning: No test job summaries were found to publish." >> "$GITHUB_STEP_SUMMARY"
+            echo "No test summaries found" >> "$GITHUB_STEP_SUMMARY"
             exit 0
           fi
 
           echo "## LAVA Test Job Summaries" >> "$GITHUB_STEP_SUMMARY"
           for f in "${files[@]}"; do
-            echo "" >> "$GITHUB_STEP_SUMMARY"
             echo "### $(basename "$f")" >> "$GITHUB_STEP_SUMMARY"
             cat "$f" >> "$GITHUB_STEP_SUMMARY"
           done
