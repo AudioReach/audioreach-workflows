@@ -30,7 +30,7 @@ on:
         required: false
         type: string
         default: testjobs
-
+      
       # === LAVA server configuration ===
       lava_url:
         description: LAVA server URL
@@ -53,60 +53,62 @@ jobs:
     runs-on:
       group: GHA-AudioReach-SelfHosted-RG
       labels: [ self-hosted, audior-prd-u2204-x64-large-od-ephem ]
-
     strategy:
       fail-fast: false
       matrix:
         build_matrix: ${{ fromJSON(inputs.build_matrix) }}
 
     steps:
-      # ---------------------------------------------
-      # Determine whether testing is enabled
-      # ---------------------------------------------
-      - name: Check if testing is enabled
-        id: testing_check
-        run: |
-          if [ "${{ matrix.build_matrix.testing_enabled }}" != "true" ]; then
-            echo "enabled=false" >> "$GITHUB_OUTPUT"
-            echo "Testing disabled for this target"
-          else
-            echo "enabled=true" >> "$GITHUB_OUTPUT"
-            echo "Testing enabled for this target"
-          fi
 
-      # ---------------------------------------------
-      # Checkout only when testing enabled
-      # ---------------------------------------------
+      # If your matrix sometimes uses a string "true", replace the if: with:
+      # if: ${{ !fromJSON('["true", true]').includes(matrix.build_matrix.testing_enabled) }}
+      - name: Skip if testing disabled
+        if: ${{ matrix.build_matrix.testing_enabled != true }}
+        env:
+          TESTING_ENABLED: ${{ matrix.build_matrix.testing_enabled }}
+          IMAGE_NAME: ${{ matrix.build_matrix.image_name }}
+        run: |
+          echo "testing_enabled=\"$TESTING_ENABLED\""
+          echo "Testing disabled for target \"$IMAGE_NAME\". Skipping."
+          exit 0
+
       - name: Clone repository
-        if: steps.testing_check.outputs.enabled == 'true'
         uses: actions/checkout@v6
         with:
           fetch-depth: 0
           repository: AudioReach/meta-audioreach
 
       - name: Download presigned URL
-        if: steps.testing_check.outputs.enabled == 'true'
+        id: download_url
         uses: actions/download-artifact@v7
         with:
           name: presigned_url_${{ matrix.build_matrix.image_name }}.txt
           path: ${{ github.workspace }}
 
       - name: Get build URL
-        if: steps.testing_check.outputs.enabled == 'true'
         id: get_build_url
         uses: actions/github-script@v8
         with:
           script: |
             const fs = require('fs')
-            const path = `${{ github.workspace }}/presigned_url_${{ matrix.build_matrix.image_name }}.txt`
-            const url = fs.readFileSync(path, 'utf8').trim()
+            const filePath = `${{ github.workspace }}/presigned_url_${{ matrix.build_matrix.image_name }}.txt`
+            const url = fs.readFileSync(filePath, 'utf8').toString().trim()
+            console.log(url)
             core.setOutput('build_url', url)
 
-      # ---------------------------------------------
-      # Submit LAVA job
-      # ---------------------------------------------
+      - name: Print trigger info
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          BUILD_URL: ${{ steps.get_build_url.outputs.build_url }}
+          IMAGE_NAME: ${{ matrix.build_matrix.image_name }}
+          MACHINE_NAME: ${{ matrix.build_matrix.machine_name }}
+        run: |
+          echo "Triggered by \"$EVENT_NAME\""
+          echo "Build URL: \"$BUILD_URL\""
+          echo "Image: \"$IMAGE_NAME\""
+          echo "Machine: \"$MACHINE_NAME\""
+
       - name: Submit LAVA test job
-        if: steps.testing_check.outputs.enabled == 'true'
         id: lava_submit
         uses: AudioReach/audioreach-workflows/.github/actions/lava-test-plans@temp
         with:
@@ -124,21 +126,15 @@ jobs:
           run_id: ${{ github.run_id }}
           run_attempt: ${{ github.run_attempt }}
 
-      # ---------------------------------------------
-      # Fail ONLY if testing was enabled and failed
-      # ---------------------------------------------
-      - name: Enforce failure for enabled tests
-        if: steps.testing_check.outputs.enabled == 'true' && failure()
-        run: exit 1
-
-  # -------------------------------------------------
-  # Publish ONE aggregated summary
-  # -------------------------------------------------
   publish-test-summary:
     name: "Publish Tests Summary"
     needs: [submit_lava]
     if: ${{ always() }}
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        build_matrix: ${{ fromJSON(inputs.build_matrix) }}
     permissions:
       checks: write
       pull-requests: write
@@ -149,6 +145,17 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+      
+      - name: Skip if testing disabled
+        if: ${{ matrix.build_matrix.testing_enabled != true }}
+        env:
+          TESTING_ENABLED: ${{ matrix.build_matrix.testing_enabled }}
+          IMAGE_NAME: ${{ matrix.build_matrix.image_name }}
+        run: |
+          echo "testing_enabled=\"$TESTING_ENABLED\""
+          echo "Testing disabled for target \"$IMAGE_NAME\". Skipping."
+          exit 0
+
       - name: Generate Summary
         id: generate-summary
         uses: AudioReach/audioreach-workflows/.github/actions/test-job-summary@temp
