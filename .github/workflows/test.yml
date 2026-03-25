@@ -46,7 +46,7 @@ jobs:
       labels: [self-hosted, audior-prd-u2204-x64-large-od-ephem]
 
     outputs:
-      tests_executed: ${{ steps.set-tests-flag.outputs.tests_executed }}
+      tests_executed: ${{ steps.tests_flag.outputs.tests_executed }}
 
     strategy:
       fail-fast: false
@@ -54,23 +54,20 @@ jobs:
         build_matrix: ${{ fromJSON(inputs.build_matrix) }}
 
     steps:
-      - name: Set tests_executed=false (testing disabled)
-        id: set-tests-flag
-        if: ${{ matrix.build_matrix.testing_enabled != true }}
+      - name: Determine if tests are executed
+        id: tests_flag
         run: |
-          echo "tests_executed=false" >> "$GITHUB_OUTPUT"
+          if [ "${{ matrix.build_matrix.testing_enabled }}" = "true" ]; then
+            echo "tests_executed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "tests_executed=false" >> "$GITHUB_OUTPUT"
+          fi
 
       - name: Skip if testing disabled
         if: ${{ matrix.build_matrix.testing_enabled != true }}
         run: |
           echo "Testing disabled for ${{ matrix.build_matrix.image_name }}"
           exit 0
-
-      - name: Set tests_executed=true
-        id: set-tests-flag
-        if: ${{ matrix.build_matrix.testing_enabled == true }}
-        run: |
-          echo "tests_executed=true" >> "$GITHUB_OUTPUT"
 
       - uses: actions/checkout@v6
         with:
