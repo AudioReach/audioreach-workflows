@@ -27,7 +27,7 @@
     "Build_script": "ci/rpi_build.sh",
     "Build_args": "ci/rpi_build_options.txt",
     "Testing_enabled": false,
-    "Disabled_repos": ["audioreach-pal", "audioreach-conf", "audioreach-audio-utils"]
+    "Disabled_repos": ["audioreach-pal", "audioreach-audio-utils"]
   },
   "sm8750-mtp": {
     "Test_file": "ci/sm8750-mtp.yml",
