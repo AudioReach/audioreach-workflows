@@ -80,7 +80,7 @@ runs:
     - name: Checkout lava-test-plans
       uses: actions/checkout@v5
       with:
-        repository: qualcomm-linux-stg/lava-test-plans
+        repository: qualcomm-linux/lava-test-plans
         path: lava-test-plans
         ref: master
 
@@ -141,11 +141,19 @@ runs:
 
         # Map testplan input to a plan directory
         TESTPLAN_INPUT="${INPUT_TESTPLAN}"
+        
         case "${TESTPLAN_INPUT}" in
-          boot)  TESTPLAN_DIR="boot" ;;
-          pre-merge|pre-merge-basic|pre-merge-bt) TESTPLAN_DIR="pre-merge" ;;
-          *)     TESTPLAN_DIR="${TESTPLAN_INPUT}" ;;
+          boot)
+          TESTPLAN_DIR="boot"
+            ;;
+          pre-merge-audio.yaml)
+        TESTPLAN_DIR="pre-merge"
+        ;;
+        *)
+        TESTPLAN_DIR="${TESTPLAN_INPUT}"
+        ;;
         esac
+
 
         echo "Using lava-test-plans project: ${PROJECT}"
         echo "Resolved: MACHINE=${INPUT_MACHINE_NAME}, DISTRO_NAME=${DISTRO_NAME}, TESTPLAN_DIR=${TESTPLAN_DIR}"
