@@ -80,7 +80,7 @@ jobs:
 
       - name: Download presigned URL
         id: download_url
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           name: presigned_url_${{ matrix.build_matrix.image_name }}.txt
           path: ${{ github.workspace }}
@@ -152,7 +152,7 @@ jobs:
       
       # Download ALL matching summary artifacts from parallel jobs and put into one folder.
       - name: Download Summaries
-        uses: actions/download-artifact@v6
+        uses: actions/download-artifact@v8
         with:
           pattern: test_job_summary*          # match all parallel summaries
           merge-multiple: true                # place all matched artifact contents into a single folder
