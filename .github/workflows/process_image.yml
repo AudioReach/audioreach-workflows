@@ -58,11 +58,11 @@ jobs:
     steps:
       - name: Build docker Image
         id: get-docker-image
-        uses: AudioReach/audioreach-workflows/.github/actions/build_docker_image@master
+        uses: AudioReach/audioreach-workflows/.github/actions/build_docker_image@temp
 
       - name: Sync Codebase
         id: sync
-        uses: AudioReach/audioreach-workflows/.github/actions/sync@master
+        uses: AudioReach/audioreach-workflows/.github/actions/sync@temp
         with:
           event_name: ${{ inputs.event_name }}
           pr_ref: ${{ inputs.pr_ref }}
@@ -91,12 +91,12 @@ jobs:
       - name: Pull meta-audioreach pre compiled image
         id: pull_meta_audioreach
         if: ${{ env.IMAGE_NAME != 'raspberrypi4' }}
-        uses: AudioReach/audioreach-workflows/.github/actions/aws-s3-exchanger@master
+        uses: AudioReach/audioreach-workflows/.github/actions/aws-s3-exchanger@temp
         with:
           s3_bucket: qli-prd-audior-gh-artifacts
           mode: download
-          #qcom-multimedia-image-rb3gen2-core-kit.rootfs.qcomflash.tar.gz
-          download_filename: qcom-multimedia-image-${{ env.IMAGE_NAME }}.rootfs.qcomflash.tar.gz
+          #qcom-multimedia-proprietary-image-rb3gen2-core-kit.rootfs.qcomflash.tar.gz
+          download_filename: qcom-multimedia-proprietary-image-${{ env.IMAGE_NAME }}.rootfs.qcomflash.tar.gz
           location: AudioReach/meta-audioreach/post_merge_build
 
       - name: Extract image and mount
@@ -108,13 +108,13 @@ jobs:
           set -e
 
           echo "Extracting the image"
-          tar -xvf qcom-multimedia-image-${{ env.IMAGE_NAME }}.rootfs.qcomflash.tar.gz
-          ROOTFS_IMG=$(tar -tf qcom-multimedia-image-${{ env.IMAGE_NAME }}.rootfs.qcomflash.tar.gz | grep 'rootfs.img$')
+          tar -xvf qcom-multimedia-proprietary-image-${{ env.IMAGE_NAME }}.rootfs.qcomflash.tar.gz
+          ROOTFS_IMG=$(tar -tf qcom-multimedia-proprietary-image-${{ env.IMAGE_NAME }}.rootfs.qcomflash.tar.gz | grep 'rootfs.img$')
           ROOTFS_DIR=$(dirname "$ROOTFS_IMG")
           # Export as GitHub Actions environment variables
           echo "ROOTFS_IMG=$ROOTFS_IMG" >> $GITHUB_ENV
           echo "ROOTFS_DIR=$ROOTFS_DIR" >> $GITHUB_ENV
-          rm -rf qcom-multimedia-image-${{ env.IMAGE_NAME }}.rootfs.qcomflash.tar.gz
+          rm -rf qcom-multimedia-proprietary-image-${{ env.IMAGE_NAME }}.rootfs.qcomflash.tar.gz
           echo "Image extracted successfully"
 
           ls -l "$ROOTFS_DIR/rootfs.img"
@@ -155,7 +155,7 @@ jobs:
           set -e
           echo $PWD
           echo "Creating tar image for qcomflash directory"
-          tar -czvf qcom-multimedia-image-${{ env.IMAGE_NAME }}.rootfs.qcomflash.tar.gz ${{ env.ROOTFS_DIR }}/
+          tar -czvf qcom-multimedia-proprietary-image-${{ env.IMAGE_NAME }}.rootfs.qcomflash.tar.gz ${{ env.ROOTFS_DIR }}/
 
       # ✅ Moving newly created tar files into presigned_urls path
       - name: Move tar to presigned_urls directory
@@ -165,7 +165,7 @@ jobs:
           set -e
           mkdir -p ${{ github.workspace }}/presigned_urls
 
-          FILE="qcom-multimedia-image-${{ env.IMAGE_NAME }}.rootfs.qcomflash.tar.gz"
+          FILE="qcom-multimedia-proprietary-image-${{ env.IMAGE_NAME }}.rootfs.qcomflash.tar.gz"
 
           if [ ! -f "$FILE" ]; then
             echo "ERROR: $FILE not found!"
@@ -178,9 +178,9 @@ jobs:
       - name: Upload tar image
         id: upload_tar_image
         if: ${{ env.IMAGE_NAME != 'raspberrypi4' }}
-        uses: AudioReach/audioreach-workflows/.github/actions/aws-s3-exchanger@master
+        uses: AudioReach/audioreach-workflows/.github/actions/aws-s3-exchanger@temp
         with:
           s3_bucket: qli-prd-audior-gh-artifacts
-          local_file: ${{ github.workspace }}/presigned_urls/qcom-multimedia-image-${{ env.IMAGE_NAME }}.rootfs.qcomflash.tar.gz
+          local_file: ${{ github.workspace }}/presigned_urls/qcom-multimedia-proprietary-image-${{ env.IMAGE_NAME }}.rootfs.qcomflash.tar.gz
           mode: upload
 
