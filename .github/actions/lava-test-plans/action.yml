@@ -174,7 +174,7 @@ runs:
 
         IMAGE_TYPE="core-image-base"
         if [ "${DISTRO_NAME}" = "qcom-distro" ]; then
-          IMAGE_TYPE="qcom-multimedia-image"
+          IMAGE_TYPE="qcom-multimedia-proprietary-image"
           printf 'AUTO_LOGIN_PASSWORD_PROMPT=%s\n' "Password" >> "${VARS_FILE}"
           printf 'AUTO_LOGIN_PASSWORD=%s\n' "oelinux123"   >> "${VARS_FILE}"
         fi
