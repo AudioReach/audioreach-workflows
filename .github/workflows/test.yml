@@ -80,7 +80,7 @@ jobs:
 
       - name: Get build URL
         id: get_build_url
-        uses: actions/github-script@v8
+        uses: actions/github-script@v9
         with:
           script: |
             const urls = JSON.parse('${{ inputs.build_urls }}')
