@@ -58,11 +58,11 @@ jobs:
     steps:
       - name: Build docker Image
         id: get-docker-image
-        uses: AudioReach/audioreach-workflows/.github/actions/build_docker_image@master
+        uses: AudioReach/audioreach-workflows/.github/actions/build_docker_image@ci
 
       - name: Sync Codebase
         id: sync
-        uses: AudioReach/audioreach-workflows/.github/actions/sync@master
+        uses: AudioReach/audioreach-workflows/.github/actions/sync@ci
         with:
           event_name: ${{ inputs.event_name }}
           pr_ref: ${{ inputs.pr_ref }}
@@ -91,7 +91,7 @@ jobs:
       - name: Pull meta-audioreach pre compiled image
         id: pull_meta_audioreach
         if: ${{ env.IMAGE_NAME != 'raspberrypi4' }}
-        uses: AudioReach/audioreach-workflows/.github/actions/aws-s3-exchanger@master
+        uses: AudioReach/audioreach-workflows/.github/actions/aws-s3-exchanger@ci
         with:
           s3_bucket: qli-prd-audior-gh-artifacts
           mode: download
@@ -179,7 +179,7 @@ jobs:
       - name: Upload tar image
         id: upload_tar_image
         if: ${{ env.IMAGE_NAME != 'raspberrypi4' }}
-        uses: AudioReach/audioreach-workflows/.github/actions/aws-s3-exchanger@master
+        uses: AudioReach/audioreach-workflows/.github/actions/aws-s3-exchanger@ci
         with:
           s3_bucket: qli-prd-audior-gh-artifacts
           local_file: ${{ github.workspace }}/presigned_urls/qcom-multimedia-proprietary-image-${{ env.IMAGE_NAME }}.rootfs.qcomflash.tar.gz
