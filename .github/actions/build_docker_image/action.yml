@@ -13,8 +13,9 @@ runs:
     - name: Checkout ar-image repo for Dockerfile
       uses: actions/checkout@v4
       with:
-        fetch-depth: 0
         repository: AudioReach/ar-image
+        ref: test
+        fetch-depth: 0
 
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v3
