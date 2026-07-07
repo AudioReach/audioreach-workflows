@@ -48,7 +48,7 @@
     "Build_args": "ci/build_options.txt",
     "Testing_enabled": false,
     "Disabled_repos": []
-  }
+  },
   "glymur-crd": {
     "Test_file": "ci/glymur-crd.yml",
     "SDK_name": "sdk-glymur-crd.sh",
