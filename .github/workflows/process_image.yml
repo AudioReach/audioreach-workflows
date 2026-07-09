@@ -130,37 +130,26 @@ jobs:
             ${{ steps.get-docker-image.outputs.image_name }} \
             bash -c '
               set -xe
-              cd ${ROOTFS_DIR}
-              export DEBIAN_FRONTEND=noninteractive
-              export LIBGUESTFS_BACKEND=direct
 
-              if ! command -v guestmount >/dev/null 2>&1; then
-                sudo apt-get update
-                sudo apt-get install -y libguestfs-tools
-              fi
+              ROOTFS_PATH="/workspace/${ROOTFS_DIR}"
 
+              cd "${ROOTFS_PATH}"
               sudo mkdir -p /tmp/rootfs
 
-              cleanup_mount() {
-                if mountpoint -q /tmp/rootfs; then
-                  sudo guestunmount /tmp/rootfs || true
-                fi
-              }
-              trap cleanup_mount EXIT
-
-              sudo guestmount -a rootfs.img -i --rw /tmp/rootfs
-              echo "Image mounted successfully with guestmount"
+              LOOP_DEV=$(sudo losetup --find --show "${ROOTFS_PATH}/rootfs.img")
+              sudo mount "$LOOP_DEV" /tmp/rootfs
+              echo "Image mounted on $LOOP_DEV"
 
               # Copy the arg build files to the mounted image
               sudo bash -c "source /workspace/${FILES_TO_COPY}"
               echo "Build files copied successfully"
               sync
-
-              # Unmount handled by trap
-              cleanup_mount
-              trap - EXIT
-              echo "Image unmounted successfully with guestunmount"
+              # Unmount the image
+              sudo umount /tmp/rootfs
+              sudo losetup -d "$LOOP_DEV"
+              echo "Image unmounted and loop device released"
             '
+
           ls -l "$ROOTFS_DIR/rootfs.img"
 
       - name: Create tar image for qcomflash directory
@@ -201,4 +190,3 @@ jobs:
           s3_bucket: qli-prd-audior-gh-artifacts
           local_file: ${{ github.workspace }}/presigned_urls/qcom-multimedia-proprietary-image-${{ env.IMAGE_NAME }}.rootfs.qcomflash.tar.gz
           mode: upload
-
