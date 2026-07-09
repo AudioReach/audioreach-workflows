@@ -131,18 +131,35 @@ jobs:
             bash -c '
               set -xe
               cd ${ROOTFS_DIR}
+              export DEBIAN_FRONTEND=noninteractive
+              export LIBGUESTFS_BACKEND=direct
+
+              if ! command -v guestmount >/dev/null 2>&1; then
+                sudo apt-get update
+                sudo apt-get install -y libguestfs-tools
+              fi
+
               sudo mkdir -p /tmp/rootfs
-              sudo mount rootfs.img /tmp/rootfs
-              echo "Image mounted successfully"
-              
+
+              cleanup_mount() {
+                if mountpoint -q /tmp/rootfs; then
+                  sudo guestunmount /tmp/rootfs || true
+                fi
+              }
+              trap cleanup_mount EXIT
+
+              sudo guestmount -a rootfs.img -i --rw /tmp/rootfs
+              echo "Image mounted successfully with guestmount"
 
               # Copy the arg build files to the mounted image
               sudo bash -c "source /workspace/${FILES_TO_COPY}"
               echo "Build files copied successfully"
               sync
-              # Unmount the image
-              sudo umount /tmp/rootfs
-              echo "Image unmounted successfully"
+
+              # Unmount handled by trap
+              cleanup_mount
+              trap - EXIT
+              echo "Image unmounted successfully with guestunmount"
             '
           ls -l "$ROOTFS_DIR/rootfs.img"
 
