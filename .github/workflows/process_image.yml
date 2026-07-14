@@ -119,49 +119,54 @@ jobs:
 
           ls -l "$ROOTFS_DIR/rootfs.img"
 
-          # Run inside the docker container
+          # Mount on host runner first (container loop/libguestfs is unreliable on some runners),
+          # then run only file-copy logic in docker with /tmp/rootfs bind-mounted.
+          sudo mkdir -p /tmp/rootfs
+
+          cleanup_mount() {
+            if mountpoint -q /tmp/rootfs; then
+              sudo umount /tmp/rootfs || sudo guestunmount /tmp/rootfs || true
+            fi
+          }
+          trap cleanup_mount EXIT
+
+          if sudo mount -o loop "$ROOTFS_DIR/rootfs.img" /tmp/rootfs; then
+            echo "Image mounted successfully with loop mount"
+          else
+            echo "Loop mount failed on host, trying guestmount"
+            sudo env DEBIAN_FRONTEND=noninteractive apt-get update
+            sudo env DEBIAN_FRONTEND=noninteractive apt-get install -y libguestfs-tools
+            export LIBGUESTFS_BACKEND=direct
+            export LIBGUESTFS_BACKEND_SETTINGS=force_tcg
+            export LIBGUESTFS_DEBUG=1
+            export LIBGUESTFS_TRACE=1
+
+            echo "DEBUG: running guestmount with LIBGUESTFS_DEBUG=1 LIBGUESTFS_TRACE=1"
+            if ! sudo -E guestmount -a "$ROOTFS_DIR/rootfs.img" -i --rw /tmp/rootfs; then
+              echo "guestmount failed; collecting libguestfs diagnostics"
+              sudo -E libguestfs-test-tool || true
+              exit 1
+            fi
+            echo "Image mounted successfully with guestmount"
+          fi
+
           docker run \
             --rm \
             -v $PWD:/workspace \
+            -v /tmp/rootfs:/tmp/rootfs \
             -w /workspace \
-            -e "ROOTFS_DIR=$ROOTFS_DIR" \
             -e "FILES_TO_COPY=${{ inputs.files_to_copy }}" \
-            --privileged \
             ${{ steps.get-docker-image.outputs.image_name }} \
             bash -c '
               set -xe
-              cd ${ROOTFS_DIR}
-              export DEBIAN_FRONTEND=noninteractive
-              export LIBGUESTFS_BACKEND=direct
-              export LIBGUESTFS_BACKEND_SETTINGS=force_tcg
-
-              if ! command -v guestmount >/dev/null 2>&1; then
-                sudo env DEBIAN_FRONTEND=noninteractive apt-get update
-                sudo env DEBIAN_FRONTEND=noninteractive apt-get install -y libguestfs-tools
-              fi
-
-              sudo mkdir -p /tmp/rootfs
-
-              cleanup_mount() {
-                if mountpoint -q /tmp/rootfs; then
-                  sudo guestunmount /tmp/rootfs || true
-                fi
-              }
-              trap cleanup_mount EXIT
-
-              sudo -E guestmount -a rootfs.img -i --rw /tmp/rootfs
-              echo "Image mounted successfully with guestmount"
-
-              # Copy the arg build files to the mounted image
               sudo bash -c "source /workspace/${FILES_TO_COPY}"
               echo "Build files copied successfully"
               sync
-
-              # Unmount handled by trap
-              cleanup_mount
-              trap - EXIT
-              echo "Image unmounted successfully with guestunmount"
             '
+
+          cleanup_mount
+          trap - EXIT
+          echo "Image unmounted successfully"
           ls -l "$ROOTFS_DIR/rootfs.img"
 
       - name: Create tar image for qcomflash directory
