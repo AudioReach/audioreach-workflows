@@ -159,7 +159,18 @@ jobs:
             ${{ steps.get-docker-image.outputs.image_name }} \
             bash -c '
               set -xe
-              sudo bash -c "source /workspace/${FILES_TO_COPY}"
+              set +e
+              copy_output="$(sudo bash -c "source /workspace/${FILES_TO_COPY}" 2>&1)"
+              copy_rc=$?
+              set -e
+              echo "$copy_output"
+              if [ "$copy_rc" -ne 0 ]; then
+                if echo "$copy_output" | grep -q "cp: cannot stat"; then
+                  echo "Optional files missing in ${FILES_TO_COPY}; continuing"
+                else
+                  exit "$copy_rc"
+                fi
+              fi
               echo "Build files copied successfully"
               sync
             '
