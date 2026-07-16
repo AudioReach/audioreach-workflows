@@ -139,13 +139,25 @@ runs:
         PROJECT="meta-qcom"
         DISTRO_NAME="${INPUT_DISTRO_NAME}"
 
+        
         # Map testplan input to a plan directory
         TESTPLAN_INPUT="${INPUT_TESTPLAN}"
+
         case "${TESTPLAN_INPUT}" in
-          boot)  TESTPLAN_DIR="boot" ;;
-          pre-merge|pre-merge-basic|pre-merge-bt) TESTPLAN_DIR="pre-merge" ;;
-          *)     TESTPLAN_DIR="${TESTPLAN_INPUT}" ;;
+          boot)
+          TESTPLAN_DIR="boot"
+          ;;
+
+        pre-merge)
+        TESTPLAN_DIR="pre-merge"
+        TESTPLAN_FILE="pre-merge-audio.yaml"
+        ;;
+
+        *)
+        TESTPLAN_DIR="${TESTPLAN_INPUT}"
+        ;;
         esac
+
 
         echo "Using lava-test-plans project: ${PROJECT}"
         echo "Resolved: MACHINE=${INPUT_MACHINE_NAME}, DISTRO_NAME=${DISTRO_NAME}, TESTPLAN_DIR=${TESTPLAN_DIR}"
@@ -194,7 +206,7 @@ runs:
         lava-test-plans \
           --dry-run \
           --variables "${VARS_FILE}" \
-          --test-plan "${PROJECT}/${DISTRO_NAME}/${TESTPLAN_DIR}" \
+          --test-plan "${PROJECT}/${DISTRO_NAME}/${TESTPLAN_DIR}/${TESTPLAN_FILE}" \
           --device-type "projects/${PROJECT}/devices/${INPUT_MACHINE_NAME}" \
           --dry-run-path "${JOBS_SUBDIR}" || true
 
