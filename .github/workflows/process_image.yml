@@ -111,6 +111,13 @@ jobs:
           tar -xvf qcom-multimedia-proprietary-image-${{ env.IMAGE_NAME }}.rootfs.qcomflash.tar.gz
           ROOTFS_IMG=$(tar -tf qcom-multimedia-proprietary-image-${{ env.IMAGE_NAME }}.rootfs.qcomflash.tar.gz | grep 'rootfs.img$')
           ROOTFS_DIR=$(dirname "$ROOTFS_IMG")
+          EXPECTED_ROOTFS_DIR="qcom-multimedia-proprietary-image-${{ env.IMAGE_NAME }}"
+          if [ "$ROOTFS_DIR" != "$EXPECTED_ROOTFS_DIR" ] && [ -d "$ROOTFS_DIR" ]; then
+            rm -rf "$EXPECTED_ROOTFS_DIR"
+            mv "$ROOTFS_DIR" "$EXPECTED_ROOTFS_DIR"
+            ROOTFS_DIR="$EXPECTED_ROOTFS_DIR"
+            ROOTFS_IMG="$ROOTFS_DIR/rootfs.img"
+          fi
           # Export as GitHub Actions environment variables
           echo "ROOTFS_IMG=$ROOTFS_IMG" >> $GITHUB_ENV
           echo "ROOTFS_DIR=$ROOTFS_DIR" >> $GITHUB_ENV
