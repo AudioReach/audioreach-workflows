@@ -36,34 +36,49 @@ runs:
       shell: bash
       env:
         UPLOAD_LOCATION: ${{ inputs.upload_location }}
+        INPUT_LOCATION: ${{ inputs.location }}
+        INPUT_MODE: ${{ inputs.mode }}
+        INPUT_LOCAL_FILE: ${{ inputs.local_file }}
+        INPUT_S3_BUCKET: ${{ inputs.s3_bucket }}
+        INPUT_DOWNLOAD_FILENAME: ${{ inputs.download_filename }}
+        WORKSPACE_DIR: ${{ github.workspace }}
+        IMAGE_NAME: ${{ env.IMAGE_NAME }}
       run: |
-        case "${{ inputs.mode }}" in
+        set -euo pipefail
+
+        location_prefix="${INPUT_LOCATION}"
+        if [ -n "$location_prefix" ]; then
+          location_prefix="${location_prefix%/}/"
+        fi
+
+        case "${INPUT_MODE}" in
           upload)
             echo "::group::$(printf '__________ %-100s' 'Process' | tr ' ' _)"
             echo "Uploading file to S3 bucket..."
-            aws s3 cp "${{ inputs.local_file }}" s3://${{ inputs.s3_bucket }}/${{ inputs.location }}/${{ env.UPLOAD_LOCATION }}${{ env.IMAGE_NAME }}/
-            echo "Uploaded ${{ inputs.local_file }} to s3://${{ inputs.s3_bucket }}/${{ inputs.location }}/${{ env.UPLOAD_LOCATION }}${{ env.IMAGE_NAME }}/"
+            aws s3 cp "${INPUT_LOCAL_FILE}" "s3://${INPUT_S3_BUCKET}/${location_prefix}${UPLOAD_LOCATION}${IMAGE_NAME}/"
+            echo "Uploaded ${INPUT_LOCAL_FILE} to s3://${INPUT_S3_BUCKET}/${location_prefix}${UPLOAD_LOCATION}${IMAGE_NAME}/"
             echo "::endgroup::"
-            echo "Creating Pre-signed URL for ${{ inputs.local_file }}..."
-            filename="$(basename "${{ inputs.local_file }}")"
+            echo "Creating Pre-signed URL for ${INPUT_LOCAL_FILE}..."
+            filename="$(basename "${INPUT_LOCAL_FILE}")"
             echo "Filename: $filename"
-            presigned_url="$(aws s3 presign s3://${{ inputs.s3_bucket }}/${{ inputs.location }}/${{ env.UPLOAD_LOCATION }}${{ env.IMAGE_NAME }}/$filename --expires-in 3600)"
+            presigned_url="$(aws s3 presign "s3://${INPUT_S3_BUCKET}/${location_prefix}${UPLOAD_LOCATION}${IMAGE_NAME}/$filename" --expires-in 3600)"
             echo "Pre-signed URL: $presigned_url"
 
             # Make URL available as a step output (fixed key)
             echo "presigned_url=${presigned_url}" >> "$GITHUB_OUTPUT"
 
             # Also write the URL into a uniquely named file for artifact download
-            echo "${presigned_url}" > "${{ github.workspace }}/presigned_urls/presigned_url_${{ env.IMAGE_NAME }}.txt"
+            mkdir -p "${WORKSPACE_DIR}/presigned_urls"
+            echo "${presigned_url}" > "${WORKSPACE_DIR}/presigned_urls/presigned_url_${IMAGE_NAME}.txt"
             ;;
           download)
             #Download The required file from s3
             echo "::group::$(printf '__________ %-100s' 'Process' | tr ' ' _)"
             echo "Downloading files from S3 bucket..."
-            aws s3 cp s3://${{ inputs.s3_bucket }}/${{ inputs.location }}/${{ inputs.download_filename }} .
+            aws s3 cp "s3://${INPUT_S3_BUCKET}/${location_prefix}${INPUT_DOWNLOAD_FILENAME}" .
             echo "::endgroup::"
-            chmod 777 ${{ inputs.download_filename }}
-            echo "Downloaded ${{ inputs.download_filename }} from s3://${{ inputs.s3_bucket }}/${{ inputs.location }}"
+            chmod 0644 "${INPUT_DOWNLOAD_FILENAME}"
+            echo "Downloaded ${INPUT_DOWNLOAD_FILENAME} from s3://${INPUT_S3_BUCKET}/${INPUT_LOCATION}"
             ;;
           *)
             echo "Invalid mode. Use 'upload' or 'download'."
