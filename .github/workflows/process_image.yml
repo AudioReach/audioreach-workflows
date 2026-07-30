@@ -41,6 +41,11 @@ on:
         type: string
         description: JSON string for the build matrix
 
+    outputs:
+      build_urls:
+        description: JSON map of presigned_url_<image>.txt → URL for each processed image
+        value: ${{ jobs.aggregate_urls.outputs.build_urls }}
+
 jobs:
   process_image:
     runs-on:
@@ -58,11 +63,11 @@ jobs:
     steps:
       - name: Build docker Image
         id: get-docker-image
-        uses: AudioReach/audioreach-workflows/.github/actions/build_docker_image@master
+        uses: AudioReach/audioreach-workflows/.github/actions/build_docker_image@ci
 
       - name: Sync Codebase
         id: sync
-        uses: AudioReach/audioreach-workflows/.github/actions/sync@master
+        uses: AudioReach/audioreach-workflows/.github/actions/sync@ci
         with:
           event_name: ${{ inputs.event_name }}
           pr_ref: ${{ inputs.pr_ref }}
@@ -94,7 +99,7 @@ jobs:
       - name: Pull meta-audioreach pre compiled image
         id: pull_meta_audioreach
         if: ${{ env.IMAGE_NAME != 'raspberrypi4' }}
-        uses: AudioReach/audioreach-workflows/.github/actions/aws-s3-exchanger@master
+        uses: AudioReach/audioreach-workflows/.github/actions/aws-s3-exchanger@ci
         with:
           s3_bucket: qli-prd-audior-gh-artifacts
           mode: download
@@ -234,9 +239,37 @@ jobs:
       - name: Upload tar image
         id: upload_tar_image
         if: ${{ env.IMAGE_NAME != 'raspberrypi4' }}
-        uses: AudioReach/audioreach-workflows/.github/actions/aws-s3-exchanger@master
+        uses: AudioReach/audioreach-workflows/.github/actions/aws-s3-exchanger@ci
         with:
           s3_bucket: qli-prd-audior-gh-artifacts
           local_file: ${{ github.workspace }}/presigned_urls/qcom-multimedia-proprietary-image-${{ env.IMAGE_NAME }}.rootfs.qcomflash.tar.gz
           mode: upload
 
+  aggregate_urls:
+    name: Aggregate Presigned URLs
+    needs: [process_image]
+    if: always()
+    runs-on: ubuntu-latest
+    outputs:
+      build_urls: ${{ steps.aggregate.outputs.build_urls }}
+    steps:
+      - name: Download presigned URL artifacts
+        uses: actions/download-artifact@v4
+        continue-on-error: true
+        with:
+          pattern: presigned_url_*.txt
+          merge-multiple: true
+          path: presigned_urls
+
+      - name: Build build_urls JSON map
+        id: aggregate
+        shell: bash
+        run: |
+          json="{}"
+          shopt -s nullglob
+          for f in presigned_urls/presigned_url_*.txt; do
+            filename="$(basename "$f")"
+            url="$(cat "$f")"
+            json=$(echo "$json" | jq --arg k "$filename" --arg v "$url" '. + {($k): $v}')
+          done
+          echo "build_urls=$(echo "$json" | jq -c .)" >> "$GITHUB_OUTPUT"

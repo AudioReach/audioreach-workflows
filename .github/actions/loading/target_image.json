@@ -18,35 +18,5 @@
     "Build_args": "ci/build_options.txt",
     "Testing_enabled": true,
     "Disabled_repos": []
-  },
-  "raspberrypi4": {
-    "Test_file": "ci/raspberrypi4.yml",
-    "SDK_name": "sdk-raspberrypi4.sh",
-    "Image_name": "raspberrypi4",
-    "Machine_name": "raspberrypi4",
-    "Build_script": "ci/rpi_build.sh",
-    "Build_args": "ci/rpi_build_options.txt",
-    "Testing_enabled": false,
-    "Disabled_repos": ["audioreach-pal", "audioreach-audio-utils"]
-  },
-  "sm8750-mtp": {
-    "Test_file": "ci/sm8750-mtp.yml",
-    "SDK_name": "sdk-sm8750-mtp.sh",
-    "Image_name": "sm8750-mtp",
-    "Machine_name": "sm8750-mtp",
-    "Build_script": "ci/pkl_build.sh",
-    "Build_args": "ci/build_options.txt",
-    "Testing_enabled": false,
-    "Disabled_repos": []
-  },
-  "kaanapali-mtp": {
-    "Test_file": "ci/kaanapali-mtp.yml",
-    "SDK_name": "sdk-kaanapali-mtp.sh",
-    "Image_name": "kaanapali-mtp",
-    "Machine_name": "kaanapali-mtp",
-    "Build_script": "ci/knp_build.sh",
-    "Build_args": "ci/build_options.txt",
-    "Testing_enabled": false,
-    "Disabled_repos": []
   }
 }
