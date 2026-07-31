@@ -81,10 +81,13 @@ jobs:
       - name: Get build URL
         id: get_build_url
         uses: actions/github-script@v8
+        env:
+          BUILD_URLS_JSON: ${{ inputs.build_urls }}
+          IMAGE_NAME: ${{ matrix.build_matrix.image_name }}
         with:
           script: |
-            const urls = JSON.parse('${{ inputs.build_urls }}')
-            const image = '${{ matrix.build_matrix.image_name }}'
+            const urls = JSON.parse(process.env.BUILD_URLS_JSON)
+            const image = process.env.IMAGE_NAME
 
             const key = `presigned_url_${image}.txt`
             const matched = urls[key]

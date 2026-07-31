@@ -22,14 +22,48 @@ runs:
 
       env:
         IMAGE_NAME: ${{ env.IMAGE_NAME }}
+        CONFIG_SCRIPT_VALUE: ${{ env.CONFIG_SCRIPT }}
+        SYNC_SCRIPT_VALUE: ${{ env.SYNC_SCRIPT }}
+        APPLY_PATCH_SCRIPT_VALUE: ${{ env.APPLY_PATCH_SCRIPT }}
+        BUILD_ARGS_VALUE: ${{ env.BUILD_ARGS }}
+        BUILD_SCRIPT_VALUE: ${{ env.BUILD_SCRIPT }}
+        DOCKER_IMAGE_VALUE: ${{ inputs.docker_image }}
 
       run: |
         # Load the build arguments
+        set -euo pipefail
         set +x
-        export GITHUB_WORKSPACE="${{ github.workspace }}"
-        [ -f "./${{ env.CONFIG_SCRIPT }}" ] && export CONFIG_SCRIPT="${{ env.CONFIG_SCRIPT }}"
-        [ -f "./${{ env.SYNC_SCRIPT }}" ] && source "./${{ env.SYNC_SCRIPT }}"
-        [ -f "./${{ env.APPLY_PATCH_SCRIPT }}" ] && source "./${{ env.APPLY_PATCH_SCRIPT }}"
+
+        is_safe_relative_path() {
+          local p="$1"
+          [[ "$p" =~ ^[A-Za-z0-9._/-]+$ ]] && [[ "$p" != /* ]] && [[ "$p" != *".."* ]]
+        }
+
+        maybe_source_script() {
+          local script_path="$1"
+          if [ -z "${script_path}" ]; then
+            return 0
+          fi
+          if ! is_safe_relative_path "${script_path}"; then
+            echo "Unsafe script path: ${script_path}" >&2
+            exit 1
+          fi
+          if [ -f "./${script_path}" ]; then
+            # shellcheck disable=SC1090
+            source "./${script_path}"
+          fi
+        }
+
+        if [ -n "${CONFIG_SCRIPT_VALUE}" ]; then
+          if ! is_safe_relative_path "${CONFIG_SCRIPT_VALUE}"; then
+            echo "Unsafe script path: ${CONFIG_SCRIPT_VALUE}" >&2
+            exit 1
+          fi
+          [ -f "./${CONFIG_SCRIPT_VALUE}" ] && export CONFIG_SCRIPT="${CONFIG_SCRIPT_VALUE}"
+        fi
+
+        maybe_source_script "${SYNC_SCRIPT_VALUE}"
+        maybe_source_script "${APPLY_PATCH_SCRIPT_VALUE}"
 
         # Build inside a docker container
         docker run \
@@ -37,24 +71,32 @@ runs:
           --user $(id -u):$(id -g) \
           -v $PWD/..:$PWD/.. \
           -w $PWD \
-          -e GITHUB_WORKSPACE="${{ github.workspace }}" \
-          -e BUILD_ARGS="${{ env.BUILD_ARGS }}" \
-          -e BUILD_SCRIPT="${{ env.BUILD_SCRIPT }}" \
+          -e GITHUB_WORKSPACE="${GITHUB_WORKSPACE}" \
+          -e BUILD_ARGS="${BUILD_ARGS_VALUE}" \
+          -e BUILD_SCRIPT="${BUILD_SCRIPT_VALUE}" \
           --privileged \
-          ${{ inputs.docker_image }} \
+          "${DOCKER_IMAGE_VALUE}" \
           bash -c '
+            set -euo pipefail
             echo "Running build script... : ${BUILD_SCRIPT}"
             ls -l "${BUILD_SCRIPT}" || (echo "Build script not found!" && exit 1)
-            source ./${BUILD_SCRIPT}
+            case "${BUILD_SCRIPT}" in
+              ""|/*|*..*|*[!A-Za-z0-9._/-]*)
+                echo "Unsafe build script path: ${BUILD_SCRIPT}" && exit 1
+                ;;
+            esac
+            source "./${BUILD_SCRIPT}"
             '
 
     - name: Create build.tar
       id: create_build_tar
       shell: bash
+      env:
+        IMAGE_NAME_VALUE: ${{ env.IMAGE_NAME }}
       run: |
         # Create a tarball of the build directory
-        tar -czf build_${{ env.IMAGE_NAME }}.tar -C ${{ github.workspace }}/build .
-        echo "Build tar created at ${{ github.workspace }}/build_${{ env.IMAGE_NAME }}.tar"
+        tar -czf "build_${IMAGE_NAME_VALUE}.tar" -C "${GITHUB_WORKSPACE}/build" .
+        echo "Build tar created at ${GITHUB_WORKSPACE}/build_${IMAGE_NAME_VALUE}.tar"
 
     - name: Upload build.tar
       id: upload_build_tar
