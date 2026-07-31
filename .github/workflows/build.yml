@@ -112,9 +112,18 @@ jobs:
       - name: Run SDK Script
         id: run_sdk
         shell: bash
+        env:
+          SDK_NAME_VALUE: ${{ env.SDK_NAME }}
         run: |
+          set -euo pipefail
           echo "Running SDK Script"
-          echo "./install" | ./${{ env.SDK_NAME }}
+          case "${SDK_NAME_VALUE}" in
+            ""|/*|*..*|*[!A-Za-z0-9._/-]*)
+              echo "Unsafe SDK script path: ${SDK_NAME_VALUE}" >&2
+              exit 1
+              ;;
+          esac
+          echo "./install" | "./${SDK_NAME_VALUE}"
           echo "SDK Script ran successfully"
 
       - name: Build
@@ -122,6 +131,7 @@ jobs:
         uses: AudioReach/audioreach-workflows/.github/actions/build@master
         with:
           docker_image: ${{ steps.get-docker-image.outputs.image_name }}
+          build_matrix: ${{ inputs.build_matrix }}
         env:
           BUILD_ARGS: ${{ matrix.build_matrix.build_args }}
           BUILD_SCRIPT: ${{ matrix.build_matrix.build_script }}
@@ -132,8 +142,12 @@ jobs:
       - name: Clean Up Workspace
         if: always() 
         shell: bash
+        env:
+          SDK_NAME_VALUE: ${{ env.SDK_NAME }}
+          IMAGE_NAME_VALUE: ${{ env.IMAGE_NAME }}
         run: |
+          set -euo pipefail
           echo "Cleaning Up Workspace"
-          rm -rf install/ ${{ env.SDK_NAME }}
-          rm -rf build/ ${{ github.workspace }}/build_${{ env.IMAGE_NAME }}.tar
+          rm -rf "install/" "${SDK_NAME_VALUE}"
+          rm -rf "build/" "${GITHUB_WORKSPACE}/build_${IMAGE_NAME_VALUE}.tar"
           echo "Workspace cleaned up successfully"
