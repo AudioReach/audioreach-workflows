@@ -197,7 +197,7 @@ runs:
           --variables "${VARS_FILE}" \
           --test-plan "${PROJECT}/${DISTRO_NAME}/${TESTPLAN_DIR}" \
           --device-type "qcs" \
-          --dry-run-path "${JOBS_SUBDIR}" || true
+          --dry-run-path "${JOBS_SUBDIR}"
 
         # LAVA overlay compatibility:
         # 1) remove lava_test_results_dir from generated job context
@@ -206,6 +206,10 @@ runs:
           while IFS= read -r -d '' yaml_file; do
             sed -i '/lava_test_results_dir/d' "${yaml_file}"
             sed -i 's#echo "OVERLAY_PATH=.*" >> \\$IMAGE_PATH/flash.settings#echo "OVERLAY_PATH=/" >> \\$IMAGE_PATH/flash.settings#g' "${yaml_file}"
+            if ! grep -Fq 'echo "OVERLAY_PATH=/" >> \$IMAGE_PATH/flash.settings' "${yaml_file}"; then
+              echo "ERROR: expected OVERLAY_PATH rewrite not found in ${yaml_file}" >&2
+              exit 1
+            fi
           done < <(find "${JOBS_SUBDIR}" -type f -name '*.yaml' -print0)
         fi
 
