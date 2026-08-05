@@ -196,7 +196,7 @@ runs:
           --dry-run \
           --variables "${VARS_FILE}" \
           --test-plan "${PROJECT}/${DISTRO_NAME}/${TESTPLAN_DIR}" \
-          --device-type "projects/${PROJECT}/devices/${INPUT_MACHINE_NAME}" \
+          --device-type "qcs" \
           --dry-run-path "${JOBS_SUBDIR}" || true
 
         # LAVA overlay compatibility:
