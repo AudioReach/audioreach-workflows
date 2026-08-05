@@ -185,7 +185,7 @@ runs:
         BUILD_URL="${INPUT_BUILD_URL}"
         printf 'BUILD_DOWNLOAD_URL=%s\n' "${BUILD_URL}" >> "${VARS_FILE}"
         printf 'ROOTFS_URL=%s\n' "${BUILD_URL}" >> "${VARS_FILE}"
-        printf 'DEVICE_TYPE=%s\n' "${INPUT_IMAGE_NAME}" >> "${VARS_FILE}"
+        printf 'DEVICE_TYPE=%s\n' "qcs" >> "${VARS_FILE}"
 
         echo "==== gh-variables.ini ===="
         cat "${VARS_FILE}"
