@@ -206,29 +206,10 @@ runs:
           while IFS= read -r -d '' yaml_file; do
             sed -i '/lava_test_results_dir/d' "${yaml_file}"
             sed -i 's#echo "OVERLAY_PATH=.*" >> \\$IMAGE_PATH/flash.settings#echo "OVERLAY_PATH=/" >> \\$IMAGE_PATH/flash.settings#g' "${yaml_file}"
+            echo \"DEVICE_TYPE=qcs\" >> $IMAGE_PATH/flash.settings"
             if ! grep -Fq 'echo "OVERLAY_PATH=/" >> \$IMAGE_PATH/flash.settings' "${yaml_file}"; then
               echo "ERROR: expected OVERLAY_PATH rewrite not found in ${yaml_file}" >&2
               exit 1
-            fi
-
-            # QDL jobs don't create flash.settings; inject a minimal postprocess to add DEVICE_TYPE.
-            if grep -Fq '    to: qdl' "${yaml_file}" && ! grep -Fq 'echo "DEVICE_TYPE=qcs" >> $IMAGE_PATH/flash.settings' "${yaml_file}"; then
-              awk '
-                {
-                  print
-                  if (!inserted && $0 ~ /^    to: qdl$/) {
-                    print "    postprocess:"
-                    print "      docker:"
-                    print "        image: ghcr.io/foundriesio/lava-lmp-sign:main"
-                    print "        local: true"
-                    print "        steps:"
-                    print "        - export IMAGE_PATH=$PWD"
-                    print "        - echo \"DEVICE_TYPE=qcs\" >> $IMAGE_PATH/flash.settings"
-                    inserted=1
-                  }
-                }
-              ' "${yaml_file}" > "${yaml_file}.tmp"
-              mv "${yaml_file}.tmp" "${yaml_file}"
             fi
           done < <(find "${JOBS_SUBDIR}" -type f -name '*.yaml' -print0)
         fi
