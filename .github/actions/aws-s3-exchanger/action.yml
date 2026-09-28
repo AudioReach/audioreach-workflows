@@ -11,11 +11,15 @@ inputs:
     required: false
     default: ''
   download_filename:
-    description: The name of the SDK
+    description: The name of the file to download
     required: true
     default: ''
+  download_latest:
+    description: Download the newest object with the exact filename under location
+    required: false
+    default: 'false'
   location:
-    description: The location of the SDK
+    description: S3 location, or the base prefix to search when download_latest is true
     required: true
     default: ''
   mode:
@@ -41,6 +45,7 @@ runs:
         INPUT_LOCAL_FILE: ${{ inputs.local_file }}
         INPUT_S3_BUCKET: ${{ inputs.s3_bucket }}
         INPUT_DOWNLOAD_FILENAME: ${{ inputs.download_filename }}
+        INPUT_DOWNLOAD_LATEST: ${{ inputs.download_latest }}
         WORKSPACE_DIR: ${{ github.workspace }}
         IMAGE_NAME: ${{ env.IMAGE_NAME }}
       run: |
@@ -72,13 +77,42 @@ runs:
             echo "${presigned_url}" > "${WORKSPACE_DIR}/presigned_urls/presigned_url_${IMAGE_NAME}.txt"
             ;;
           download)
-            #Download The required file from s3
+            download_key="${location_prefix}${INPUT_DOWNLOAD_FILENAME}"
+            if [ "${INPUT_DOWNLOAD_LATEST}" = "true" ]; then
+              case "${INPUT_DOWNLOAD_FILENAME}" in
+                ""|.|..|*/*)
+                  echo "download_filename must be a filename when download_latest is true" >&2
+                  exit 1
+                  ;;
+              esac
+
+              # JSON output combines all AWS CLI listing pages before selecting the latest object.
+              download_key="$(
+                aws s3api list-objects-v2 \
+                  --bucket "${INPUT_S3_BUCKET}" \
+                  --prefix "${location_prefix}" \
+                  --output json |
+                jq -r --arg filename "${INPUT_DOWNLOAD_FILENAME}" '
+                  (.Contents // [])
+                  | map(select((.Key | split("/") | last) == $filename))
+                  | sort_by(.LastModified, .Key)
+                  | last
+                  | .Key // empty
+                '
+              )"
+
+              if [ -z "${download_key}" ]; then
+                echo "No file named ${INPUT_DOWNLOAD_FILENAME} under s3://${INPUT_S3_BUCKET}/${location_prefix}" >&2
+                exit 1
+              fi
+            fi
+
             echo "::group::$(printf '__________ %-100s' 'Process' | tr ' ' _)"
-            echo "Downloading files from S3 bucket..."
-            aws s3 cp "s3://${INPUT_S3_BUCKET}/${location_prefix}${INPUT_DOWNLOAD_FILENAME}" .
+            echo "Downloading s3://${INPUT_S3_BUCKET}/${download_key}"
+            aws s3 cp "s3://${INPUT_S3_BUCKET}/${download_key}" .
             echo "::endgroup::"
-            chmod 0755 "${INPUT_DOWNLOAD_FILENAME}"
-            echo "Downloaded ${INPUT_DOWNLOAD_FILENAME} from s3://${INPUT_S3_BUCKET}/${INPUT_LOCATION}"
+            chmod 0755 -- "${INPUT_DOWNLOAD_FILENAME}"
+            echo "Downloaded ${INPUT_DOWNLOAD_FILENAME} from s3://${INPUT_S3_BUCKET}/${download_key}"
             ;;
           *)
             echo "Invalid mode. Use 'upload' or 'download'."
@@ -94,4 +128,3 @@ runs:
         name: presigned_url_${{ env.IMAGE_NAME }}.txt
         path: ${{ github.workspace }}/presigned_urls/presigned_url_${{ env.IMAGE_NAME }}.txt
         retention-days: 1
-
