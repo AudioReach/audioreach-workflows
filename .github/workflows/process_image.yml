@@ -98,6 +98,7 @@ jobs:
         with:
           s3_bucket: qli-prd-audior-gh-artifacts
           mode: download
+          download_latest: 'true'
           #qcom-multimedia-proprietary-image-rb3gen2-core-kit.rootfs.qcomflash.tar.gz
           download_filename: qcom-multimedia-proprietary-image-${{ env.IMAGE_NAME }}.rootfs.qcomflash.tar.gz
           location: AudioReach/meta-audioreach/post_merge_build
@@ -239,4 +240,3 @@ jobs:
           s3_bucket: qli-prd-audior-gh-artifacts
           local_file: ${{ github.workspace }}/presigned_urls/qcom-multimedia-proprietary-image-${{ env.IMAGE_NAME }}.rootfs.qcomflash.tar.gz
           mode: upload
-

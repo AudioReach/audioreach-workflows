@@ -67,6 +67,12 @@ on:
         description: Optional base reference to use for building
         default: ${{ github.ref_name }}
 
+      sdk_s3_base_location:
+        required: false
+        type: string
+        description: Base S3 prefix to search for the latest meta-audioreach SDK
+        default: AudioReach/meta-audioreach/post_merge_build
+
 
 jobs:
   build:
@@ -104,7 +110,8 @@ jobs:
           s3_bucket: qli-prd-audior-gh-artifacts
           download_filename: ${{ env.SDK_NAME }}
           mode: download
-          location: AudioReach/meta-audioreach/post_merge_build
+          download_latest: 'true'
+          location: ${{ inputs.sdk_s3_base_location }}
 
       - name: Setup Directory Structure
         run: mkdir -p install/tmp

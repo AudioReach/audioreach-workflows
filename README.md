@@ -28,6 +28,8 @@ jobs:
 #### 1. `build.yml`
 Reusable workflow for build instructions.
 
+Downloads the latest uploaded SDK matching the matrix's `sdk_name`, ordered by S3 `LastModified` across the configured prefix, including run-specific folders.
+
 **Required Inputs:**
 - `build_args` (string): Required build arguments.
 
@@ -36,6 +38,7 @@ Reusable workflow for build instructions.
 - `sync_script` (string, default: `ci/sync.sh`): Optional sync script to run inside the docker container.
 - `apply_patch_script` (string, default: `ci/apply_patch.sh`): Optional script to apply patches before building.
 - `config_script` (string, default: `ci/config.sh`): Optional script to configure the build environment.
+- `sdk_s3_base_location` (string, default: `AudioReach/meta-audioreach/post_merge_build`): S3 prefix to search for the latest SDK.
 - `event_name` (string, default: `${{ github.event_name }}`): Optional event name to use for building.
 - `pr_ref` (string, default: `${{ github.event.pull_request.head.ref }}`): Optional pull request reference.
 - `pr_repo` (string, default: `${{ github.event.pull_request.head.repo.full_name }}`): Optional pull request repository.
@@ -53,6 +56,8 @@ No required or optional inputs defined for `workflow_call`.
 
 #### 3. `process_image.yml`
 Processes image for build URL.
+
+For non-Raspberry Pi targets, downloads the latest uploaded precompiled image matching the matrix's `image_name` from `AudioReach/meta-audioreach/post_merge_build/`, including run-specific folders.
 
 **Optional Inputs:**
 - `files_to_copy` (string, default: `ci/files_to_copy.sh`): Optional argument for specifying files to copy to the extracted precompiled meta-audioreach flat_build image.
