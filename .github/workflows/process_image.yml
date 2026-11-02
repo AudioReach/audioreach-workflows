@@ -94,7 +94,7 @@ jobs:
       - name: Pull meta-audioreach pre compiled image
         id: pull_meta_audioreach
         if: ${{ env.IMAGE_NAME != 'raspberrypi4' }}
-        uses: AudioReach/audioreach-workflows/.github/actions/aws-s3-exchanger@master
+        uses: AudioReach/audioreach-workflows/.github/actions/aws-s3-exchanger@ci
         with:
           s3_bucket: qli-prd-audior-gh-artifacts
           mode: download
