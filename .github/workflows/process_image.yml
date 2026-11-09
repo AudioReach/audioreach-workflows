@@ -39,7 +39,7 @@ on:
         required: false
         type: string
         description: meta-audioreach branch whose images to consume (published under post_merge_build/<branch>/)
-        default: master
+        default: ci
 
 
       build_matrix:                 # <-- added (required for matrix below)
