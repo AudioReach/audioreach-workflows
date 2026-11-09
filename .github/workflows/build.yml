@@ -71,7 +71,7 @@ on:
         required: false
         type: string
         description: meta-audioreach branch whose SDK/images to consume (published under post_merge_build/<branch>/)
-        default: master
+        default: ci
 
       sdk_s3_base_location:
         required: false
