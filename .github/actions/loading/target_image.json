@@ -19,6 +19,26 @@
     "Testing_enabled": true,
     "Disabled_repos": []
   },
+  "8275-evk": {
+    "Test_file": "ci/lava/iq-8275-evk/boot.yaml~",
+    "SDK_name": "sdk-iq-8275-evk.sh",
+    "Image_name": "iq-8275-evk",
+    "Machine_name": "8275-evk",
+    "Build_script": "ci/build.sh",
+    "Build_args": "ci/build_options.txt",
+    "Testing_enabled": false,
+    "Disabled_repos": []
+  },
+  "9075-evk": {
+    "Test_file": "ci/lava/iq-9075-evk/boot.yaml",
+    "SDK_name": "sdk-iq-9075-evk.sh",
+    "Image_name": "iq-9075-evk",
+    "Machine_name": "9075-evk",
+    "Build_script": "ci/build.sh",
+    "Build_args": "ci/build_options.txt",
+    "Testing_enabled": false,
+    "Disabled_repos": []
+  },
   "raspberrypi4": {
     "Test_file": "ci/raspberrypi4.yml",
     "SDK_name": "sdk-raspberrypi4.sh",
