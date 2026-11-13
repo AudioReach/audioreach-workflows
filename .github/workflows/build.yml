@@ -117,7 +117,7 @@ jobs:
           download_filename: ${{ env.SDK_NAME }}
           mode: download
           download_latest: 'true'
-          location: ${{ inputs.sdk_s3_base_location }}/${{ inputs.meta_audioreach_branch }}
+          location: ${{ inputs.sdk_s3_base_location }}/${{ matrix.build_matrix.meta_audioreach_branch || inputs.meta_audioreach_branch }}
 
       - name: Setup Directory Structure
         run: mkdir -p install/tmp
