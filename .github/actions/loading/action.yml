@@ -92,6 +92,7 @@ runs:
                   build_script: cfg.Build_script,
                   disabled_repos: cfg.Disabled_repos,
                   testing_enabled: cfg.Testing_enabled,
+                  meta_audioreach_branch: cfg.Meta_audioreach_branch,
                   build_args: buildArgs
                 });
               }
