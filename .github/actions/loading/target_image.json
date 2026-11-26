@@ -75,7 +75,7 @@
     "SDK_name": "sdk-glymur-crd.sh",
     "Image_name": "glymur-crd",
     "Machine_name": "glymur-crd",
-    "Build_script": "ci/build.sh",
+    "Build_script": "ci/glymur_build.sh",
     "Build_args": "ci/build_options.txt",
     "Testing_enabled": false,
     "Disabled_repos": []
